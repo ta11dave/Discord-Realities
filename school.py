@@ -17,13 +17,13 @@ class Moves:
         # show text and/or roll 2d6+mod and display result
 
 class Character:
-    def __init__(self, hype, name, look, stats, hpmod, dmgdie, race, gear, notes):
-        self.hype = hype
+    def __init__(self, title, name, look, stats, hpmod, dmgdie, race, gear, notes):
+        self.title = title
         self.name = name
         self.look = look
         self.stats = [0]*6  #16 (+2), 15 (+1), 13 (+1), 12 (+0), 9 (+0), 8 (-1) 
         self.mod = [0]*6
-        self.hp = hpmax
+        self.hp = hpmod
         self.dmgdie = dmgdie
         self.gear = [] 
         self.notes = []

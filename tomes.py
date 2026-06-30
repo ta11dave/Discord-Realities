@@ -4,7 +4,7 @@
 
 import json
 
-with open("game_data_basic.json", "r", encoding="utf-8") as f:
+with open("game_data_raw.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
 mon = []
@@ -186,5 +186,4 @@ for i in data['moves']:
     except:
         continue
     mvs.append(Moves(name, description, key))
-
 

@@ -25,10 +25,12 @@ class Character:
         self.stats = [0]*6  #16 (+2), 15 (+1), 13 (+1), 12 (+0), 9 (+0), 8 (-1) 
         self.mod = [0]*6
         self.hp = hpmod
+        self.load = 0
         self.dmgdie = dmgdie
         self.gear = [] 
         self.notes = []
         self.moves = []
+        self.myxp = 0
 
     def update():
         i = 0
@@ -61,40 +63,33 @@ class Scene:
         self.dm_id = int(dm_id)
         self.actors = {} #a dictionary of a player_id and an array of strings
         self.round_num = []
-        
         self.pinned = ""
         
-    def update_message():
+    def update_pinned(self):
         self.pinned = "" #clear it
         for actor in self.actors:
-            charname = user_registry[actor[0]]
-            self.pinned = self.pinned + charname + ": "
-            if len(actor[1])==1:
-                self.pinned = self.pinned + actor[1][0]
-            elif len(actor[1])>1:
-                for eachnote in actor[1]:
-                    self.pinned = self.pinned + ", " + eachnote 
-        return self.pinned
+            print(actor)
+            self.pinned = self.pinned + actor + ": "
         
-    def join(player_id):
-        self.actors.append([player_id, []])
+    def join(self, player_id):
+        self.actors[player_id] = []
     
-    def add_npc(npc_name):
-        self.actors.append([npc_name, []])
+    def add_npc(self, npc_name):
+        self.actors[npc_name]=[]
     
-    def leave(player_id):
+    def leave(self, player_id):
         i=0
         for actor in self.actors:
             if actor[0] == player_id:
                 self.actors.pop(i)
             i=i+1
 
-    def add_note(actor_id, note):
+    def add_note(self, actor_id, note):
         for actor in self.actors:
             if actor[0] == actor_id:
                 self.actor[1].append(note)
     
-    def remove_note(actor_id, note):
+    def remove_note(self, actor_id, note):
         for actor in self.actors:
             if actor[0] == actor_id:
                 i=0

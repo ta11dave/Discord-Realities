@@ -7,11 +7,6 @@ import json
 with open("game_data_raw.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
-mon = []
-cls = []
-eqmt = []
-mvs = []
-
 class Monster:
     def __init__(self, description, instinct, armor, hp, attacks, name, tags, moves, key):
         self.description = description
@@ -52,6 +47,11 @@ class Moves:
         self.name = name
         self.description = description
         self.key = key
+
+mon = []
+cls = []
+eqmt = []
+mvs = []
 
 for i in data['monsters']:
     try:

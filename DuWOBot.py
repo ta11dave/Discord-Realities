@@ -4,6 +4,7 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 import re
+import database
 #import d20 #https://d20.readthedocs.io/en/latest/start.html this is for rolling dice
 import school
 from tomes import mon, cls, eqmt, mvs
@@ -16,9 +17,6 @@ TOKEN = os.getenv("TOKEN")
 intents = discord.Intents.default()
 intents.message_content = True
 
-character_registry = [] # initialize character registry, an array of (ident, userid, char_name)
-user_registry = {} # a user registry with the active character for each user
-character_pile = [] # dictionary of idents and character objects
 scenelist = [] #all the scenes going on at any one time
 
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -30,17 +28,14 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.command()
 async def test(ctx):
-    print("\n*\ncharacter_registry: ", character_registry)
-    print("character_pile: ", character_pile)
-    print("user_registry: ", user_registry)
+    database.restore_lookup()
     print("scenelist: ", scenelist , "\n*\n")
 
 @bot.command()
 async def xp(ctx, amt=0):
     try:
-        ident = user_registry[ctx.author.id]
-        mychar = character_pile[ident][1]
-        mychar.myxp = mychar.myxp + amt
+        #get xp from database
+        #update new xp
         embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
         embedVar.add_field(name="XP", value=mychar.myxp, inline=False)
         await ctx.channel.send(embed=embedVar)
@@ -60,72 +55,36 @@ async def new(ctx, *args):
         await ctx.send("GOtta enter a name, choose wisely!")
         return
     charname = charname[:len(charname)-1] #taking the space out
-    if len(character_registry) == 0:
-        ident = 0
-    else:
-        x=[]
-        for each in character_registry:
-            x.append(each[0])
-        ident = max(x)+1
-    character_registry.append((ident, ctx.author.id, charname)) #this will have to be replaced (can't change a tuple)
-    
-    #make new character, start with blanks
-    placeholderchar = school.Character("",charname,"",[10,10,10,10,10,10], "", "")
-    character_pile.append([ident,placeholderchar])
-    user_registry[ctx.author.id] = ident
-    await ctx.send(f"New character made, ident is {ident} and the name is {charname}")
+    datab = database.DBManager
+    await datab.newchar(ctx.author.id, charname)
+    await ctx.send(f"New character made named {charname}")
 
 @char.command()
 async def make(ctx, playbook):
-    for aclass in cls:
-        if re.search(playbook,aclass.name,re.I) is not None:
-            myclass = aclass
     #update all the stuff we already know
-    ident = user_registry[ctx.author.id] # get active character
-    mychar = character_pile[ident][1] # refer to their sheet
-    mychar.load = myclass.load
-    mychar.dmgdie = myclass.damage
-    #bonds
-    #looks
-    #alignments
-    #for each in myclass.starting_moves:
-    #alignments_list
-    #race_moves
-    #gear_choices
-    
-    embedVar = discord.Embed(title=f"Make a {myclass.name}", description="Step by step things", color=0x00ff00)
-    embedVar.add_field(name="New Moves!",value=f"You gained the moves: {mychar.moves}", inline=False)
-    embedVar.add_field(name="Damage Die!",value=f"Your damage die is now: {mychar.dmgdie}", inline=False)
-    
-    await ctx.channel.send(embed=embedVar)
+    await ctx.send("Under Construction")
 
 @char.command()
 async def list(ctx):
-    x=[]
-    for char in character_registry:
-        if char[1]==ctx.author.id:
-            x.append(char[2])
-    embedVar = discord.Embed(title="Character List", description="The Roster:", color=0x00ff00)
-    for guy in x:
-        embedVar.add_field(name=guy,value="", inline=False)
+    datab = database.DBManager
+    test = await datab.charlist(ctx.author.id)
+    # get data from db
+    embedVar = discord.Embed(title="Character List", description="", color=0x00ff00)
+    namelist = ""
+    for guy in test:
+        namelist = namelist+ str(guy[1])+"\n"
+    embedVar.add_field(name="Roster:",value=namelist, inline=False)
     await ctx.channel.send(embed=embedVar)
 
 @char.command()
 async def change(ctx, *, newcharname):
-    old = user_registry[ctx.author.id]
-    x=[]
-    for char in character_registry:
-        if char[1]==ctx.author.id:
-            x.append(char) #a list of ident and charname
-    for char in x:
-        if re.search(newcharname,char[2],re.I) is not None:
-            user_registry[ctx.author.id] = char[0]
-    await ctx.send("Character changed to "+str((character_pile[user_registry[ctx.author.id]][1]).name))
+    # this needs to be totally redone
+    #await ctx.send("Character changed to "+str((character_pile[user_registry[ctx.author.id]][1]).name))
+    pass
 
 @char.command()
 async def view(ctx):
-    ident = user_registry[ctx.author.id] # get active character
-    mychar = character_pile[ident][1] # refer to their sheet
+    # mychar = from database
     embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
     embedVar.add_field(name="Class", value=mychar.title, inline=False)
     embedVar.add_field(name="Name", value=mychar.name, inline=False)
@@ -134,6 +93,8 @@ async def view(ctx):
     if len(mychar.notes)>0:
         embedVar.add_field(name="Notes", value=mychar.notes, inline=False)
     await ctx.channel.send(embed=embedVar)
+
+####  LOOKUP FUNCTIONS #######
 
 @bot.command()
 async def moves(ctx, aname):
@@ -209,6 +170,10 @@ async def items(ctx, aname):
         embedVar.add_field(name="Idk man", value="No idea whatcha talking about", inline=False)
     await ctx.channel.send(embed=embedVar)
 
+
+#### SCENE FUNCTIONS #######
+
+
 @bot.group(invoke_without_command = True)
 async def scene(ctx):
     for thescene in scenelist: #checking to make sure there isn't a scene already happening in this channel
@@ -239,8 +204,8 @@ async def end(ctx):
 @scene.command()
 async def join(ctx):
     try:  #if no character, stop
-        ident = user_registry[ctx.author.id]
-        mychar = character_pile[ident][1]
+        await ctx.send("gotta pull data from the database now")
+        return #remove this when figured out
     except:
         await ctx.send("Need a character to join!")
         return

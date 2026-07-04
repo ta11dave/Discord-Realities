@@ -18,8 +18,8 @@ class Moves:
         # show text and/or roll 2d6+mod and display result
 
 class Character:
-    def __init__(self, title, name, look, stats, hpmod, dmgdie):
-        self.title = title
+    def __init__(self, playbook, name, look, stats, hpmod, dmgdie):
+        self.playbook = playbook
         self.name = name
         self.look = look
         self.stats = [0]*6  #16 (+2), 15 (+1), 13 (+1), 12 (+0), 9 (+0), 8 (-1) 

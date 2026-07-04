@@ -3,6 +3,7 @@
 #https://www.npmjs.com/package/dungeonworld-data?activeTab=code
 
 import json
+import school
 
 with open("game_data_raw.json", "r", encoding="utf-8") as f:
     data = json.load(f)

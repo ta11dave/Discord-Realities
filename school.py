@@ -1,14 +1,46 @@
 import re
 #all the classes, of course
 
-class Moves:
-    def __init__(self, name, desc, mod, success, mixed, fail):
+class Monster:
+    def __init__(self, description, instinct, armor, hp, attacks, name, tags, moves, key):
+        self.description = description
+        self.instinct = instinct
+        self.armor = armor
+        self.hp = hp
+        self.attacks = attacks
         self.name = name
-        self.desc = desc
-        self.mod = mod
-        self.success = success
-        self.mixed = mixed
-        self.fail = fail
+        self.tags = tags
+        self.moves = moves
+        self.key = key
+
+class Playbook:
+    def __init__(self,name,description,load,base_hp,damage,names,bonds,looks,alignments,alignments_list,race_moves,starting_moves,advanced_moves_1,advanced_moves_2,gear_choices,key):
+        self.name = name
+        self.description = description
+        self.load = load
+        self.base_hp = base_hp
+        self.damage = damage
+        self.names = names
+        self.bonds = bonds
+        self.looks = looks
+        self.alignments = alignments
+        self.alignments_list = alignments_list
+        self.race_moves = race_moves
+        self.starting_moves = starting_moves
+        self.advanced_moves = advanced_moves_1 + advanced_moves_2
+        self.gear_choices = gear_choices
+        self.key = key
+
+class Equipment:
+    def __init__(self, tags, name):
+        self.tags = tags
+        self.name = name
+
+class Moves:
+    def __init__(self, name, description, key):
+        self.name = name
+        self.description = description
+        self.key = key
 
     def view():
         pass # read a move
@@ -18,21 +50,18 @@ class Moves:
         # show text and/or roll 2d6+mod and display result
 
 class Character:
-    def __init__(self, playbook, name, look, stats, hpmod, dmgdie):
+    def __init__(self, playbook, name, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, load, dmgdie, gear, notes, moves, xp):
         self.playbook = playbook
         self.name = name
-        self.look = look
-        self.stats = [0]*6  #16 (+2), 15 (+1), 13 (+1), 12 (+0), 9 (+0), 8 (-1) 
+        self.stats = [strength, dexterity, constitution, inteligence, wisdom, charisma]
         self.mod = [0]*6
-        self.hp = hpmod
-        self.load = 0
+        self.hp = hp
+        self.load=load
         self.dmgdie = dmgdie
-        self.gear = [] 
-        self.notes = []
-        self.moves = []
-        self.myxp = 0
-
-    def update():
+        self.gear = gear
+        self.notes = notes
+        self.moves = moves
+        self.xp = xp
         i = 0
         for stat in self.stats:
             match stat:

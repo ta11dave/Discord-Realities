@@ -42,15 +42,8 @@ class Moves:
         self.description = description
         self.key = key
 
-    def view():
-        pass # read a move
-
-    def use():
-        pass
-        # show text and/or roll 2d6+mod and display result
-
 class Character:
-    def __init__(self, playbook, name, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, load, dmgdie, gear, notes, moves, xp):
+    def __init__(self, playbook, name, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, load, dmgdie, gear, notes, moves, xp, picture):
         self.playbook = playbook
         self.name = name
         self.stats = [strength, dexterity, constitution, inteligence, wisdom, charisma]
@@ -62,6 +55,7 @@ class Character:
         self.notes = notes
         self.moves = moves
         self.xp = xp
+        self.picture=picture
         i = 0
         for stat in self.stats:
             match stat:

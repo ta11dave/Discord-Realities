@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 import re
 import database
-#import d20 #https://d20.readthedocs.io/en/latest/start.html this is for rolling dice
+import d20 
 import school
 
 #secure token stuff
@@ -23,11 +23,11 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 ## References
 # https://discordpy.readthedocs.io/en/stable/ext/commands/commands.html
 # https://github.com/DungeonPaper/dungeon_world_data/tree/master
-#https://github.com/omnilib/aiosqlite
+# https://github.com/omnilib/aiosqlite
 # https://gist.github.com/lykn/bac99b06d45ff8eed34c2220d86b6bf4
+# https://d20.readthedocs.io/en/latest/start.html
 
 #make sure the data is there in case you messed it up
-
 
 @bot.command()
 async def test(ctx):
@@ -38,14 +38,85 @@ async def resetlookup(ctx):
         await database.reset()
 
 @bot.command()
-async def xp(ctx, amt=0):
-    embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
-    oldxp = await database.XP_view()
-    if amt == 0:
-        embedVar.add_field(name="XP", value="You have "+str(myxp)+" xp.", inline=False)
+async def sheetimport(ctx):
+    # import a sheet by attaching a file
+    pass
+
+@bot.command()
+async def roll(ctx, stat="", *args):
+    if stat == "help":
+        await ctx.send("Use `!roll` to roll dice! The standard format should look something like `!roll dex +1 \"Discern Realities\" adv`")
+        return
+    datab = database.DBManager
+    mychar = await database.get_char_data(ctx.author.id)
+    embedVar = discord.Embed(title=mychar.name +" makes a move!", description=ctx.author, color=0x00ff00)
+    embedVar.set_thumbnail(url=mychar.picture)
+    stat = stat[:3].lower()
+    rollstr = "2d6"
+    myargs = []
+    i=0
+    for each in args:
+        myargs.append(each)
+    for arg in myargs:
+        if arg == "adv":
+            rollstr = "3d6kh2"
+            myargs.pop(i)
+        elif arg == "dis":
+            rollstr = "3d6kl2"
+            myargs.pop(i)
+        i=i+1
+    for arg in myargs:
+        if arg[:1]== ("+" or "-"):
+            rollstr=rollstr+str(arg)
+        else:
+            rollstr = rollstr + " ["+arg+"] "
+
+    if stat == "str":
+        rollstr = rollstr + "+"+ str(mychar.mod[0])
+    elif stat == "dex":
+        rollstr = rollstr + "+"+ str(mychar.mod[1])
+    elif stat == "con":
+        rollstr = rollstr + "+"+ str(mychar.mod[2])
+    elif stat == "int":
+        rollstr = rollstr + "+"+ str(mychar.mod[3])
+    elif stat == "wis":
+        rollstr = rollstr + "+"+ str(mychar.mod[4])
+    elif stat == "cha":
+        rollstr = rollstr + "+"+ str(mychar.mod[5])
+    elif stat == "adv":
+        rollstr = "3d6kh2"
+    elif stat == "dis":
+        rollstr = "3d6kl2"
     else:
-        newxp = await database.XP_update()
-        embedVar.add_field(name="XP", value="Your XP went from "+str(oldxp)+" to "+str(myxp)+"!", inline=False)
+        pass
+    
+    theroll = d20.roll(rollstr)
+    
+    embedVar.add_field(name="", value=theroll, inline=False)
+    if int(theroll.total)<= 6:
+        embedVar.add_field(name="Result", value="Oh no. At least you got an XP.", inline=False)
+        #add an XP to the character
+    elif int(theroll.total) in [7,8,9]:
+        embedVar.add_field(name="Result", value="Mixed Success.", inline=False)
+    elif int(theroll.total)>9:
+        embedVar.add_field(name="Result", value="Full Success!", inline=False)
+    else:
+        embedVar.add_field(name="Result", value="Something broke", inline=False)
+    
+    await ctx.channel.send(embed=embedVar)
+
+
+@bot.command()
+async def xp(ctx, amt=0):
+    datab = database.DBManager
+    mychar = await database.get_char_data(ctx.author.id)
+    embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
+    oldxp = await datab.XP_view(ctx.author.id)
+    if amt == 0:
+        embedVar.add_field(name="XP", value="You have "+str(mychar.xp)+" xp.", inline=False)
+    else:
+        newxp = await datab.updatechar("xp", amt)
+        embedVar.add_field(name="XP", value="Your XP went from "+str(oldxp)+" to "+str(mychar.xp)+"!", inline=False)
     await ctx.channel.send(embed=embedVar)
 
 @bot.group(invoke_without_command = True)
@@ -62,13 +133,31 @@ async def new(ctx, *args):
         return
     charname = charname[:len(charname)-1] #taking the space out
     datab = database.DBManager
-    await datab.newchar(ctx.author.id, charname)
+    await datab.newchar(ctx.author.id,charname)
     await ctx.send(f"New character made named {charname}")
 
 @char.command()
 async def make(ctx, playbook):
     #update all the stuff we already know
     await ctx.send("Under Construction")
+
+@char.command()
+async def set(ctx, charname):
+    datab = database.DBManager
+    mychar = await database.get_char_data(ctx.author.id)#get current charname
+    oldcharname = mychar.name
+    charlist = await datab.charlist(ctx.author.id)
+    for guy in charlist:
+        if re.search(charname,guy[1]) is not None:
+            newcharname = guy[1]
+            await datab.set(ctx.author.id, guy[0])
+    await ctx.send(f"Switched from {oldcharname} to {newcharname}")
+
+@char.command()
+async def update(ctx, *args):
+    datab=database.DBManager
+    responcetext = await datab.updatechar(ctx.author.id, args)
+    print(responcetext)
 
 @char.command()
 async def list(ctx):
@@ -80,12 +169,6 @@ async def list(ctx):
         namelist = namelist+ str(guy[1])+"\n"
     embedVar.add_field(name="Roster:",value=namelist, inline=False)
     await ctx.channel.send(embed=embedVar)
-
-@char.command()
-async def change(ctx, *, newcharname):
-    # this needs to be totally redone
-    #await ctx.send("Character changed to ").name))
-    pass
 
 @char.command()
 async def view(ctx):
@@ -100,7 +183,6 @@ async def view(ctx):
     await ctx.channel.send(embed=embedVar)
 
 #### SCENE FUNCTIONS #######
-
 
 @bot.group(invoke_without_command = True)
 async def scene(ctx):
@@ -158,6 +240,37 @@ async def info(ctx):
     #print the scene pinned message here
     pass
 
+@scene.command()
+async def help(ctx):
+    await ctx.send("Use `!scene begin` to start a scene. End the scene with `!scene end`.\nYou can add your active character to the scene with `!scene join`. The DM can add NPCs to the scene with `!scene addnpc [name]`.")
+
+@bot.group(invoke_without_command = True)
+async def lookup(ctx):
+    await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up other things")
+
+@lookup.command()
+async def monster(ctx, searchterm):
+    datab = database.DBManager
+    result = await datab.monster_lookup(ctx, searchterm)
+    print(result)
+
+@lookup.command()
+async def item(ctx, searchterm):
+    datab = database.DBManager
+    result = await datab.eqmt_lookup(ctx, searchterm)
+    print(result)
+
+@lookup.command()
+async def playbook(ctx, searchterm):
+    datab = database.DBManager
+    result = await datab.playbook_lookup(ctx, searchterm)
+    print(result)
+
+@lookup.command()
+async def move(ctx, searchterm):
+    datab = database.DBManager
+    result = await datab.move_lookup(ctx, searchterm)
+    print(result)
 
 @bot.event
 async def on_ready():
@@ -166,7 +279,6 @@ async def on_ready():
         synced = await bot.tree.sync()
     except Exception as e:
         print(f"Error syncing commands: {e}")
-
 
 bot.run(TOKEN)
 

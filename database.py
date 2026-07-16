@@ -152,7 +152,7 @@ class DBManager:
         async with aiosqlite.connect(maindb) as db:
             async with db.execute("SELECT name FROM playbooks") as cursor:
                 async for row in cursor:
-                    monnames.append(row)
+                    playnames.append(row)
         try:
             async with aiosqlite.connect(hbdb) as db:
                 async with db.execute("SELECT name FROM playbooks") as cursor:

@@ -7,6 +7,7 @@ import re
 import database
 import d20 
 import school
+import json
 
 #secure token stuff
 load_dotenv()
@@ -44,6 +45,7 @@ async def sheetimport(ctx):
 
 @bot.command()
 async def roll(ctx, stat="", *args):
+    await ctx.message.delete()
     if stat == "help":
         await ctx.send("Use `!roll` to roll dice! The standard format should look something like `!roll dex +1 \"Discern Realities\" adv`")
         return
@@ -105,7 +107,6 @@ async def roll(ctx, stat="", *args):
     
     await ctx.channel.send(embed=embedVar)
 
-
 @bot.command()
 async def xp(ctx, amt=0):
     datab = database.DBManager
@@ -152,6 +153,7 @@ async def set(ctx, charname):
             newcharname = guy[1]
             await datab.set(ctx.author.id, guy[0])
     await ctx.send(f"Switched from {oldcharname} to {newcharname}")
+    await ctx.message.delete()
 
 @char.command()
 async def update(ctx, *args):
@@ -169,6 +171,7 @@ async def list(ctx):
         namelist = namelist+ str(guy[1])+"\n"
     embedVar.add_field(name="Roster:",value=namelist, inline=False)
     await ctx.channel.send(embed=embedVar)
+    await ctx.message.delete()
 
 @char.command()
 async def view(ctx):
@@ -178,17 +181,17 @@ async def view(ctx):
     embedVar.add_field(name="Class", value=mychar.playbook, inline=False)
     embedVar.add_field(name="Name", value=mychar.name, inline=False)
     embedVar.add_field(name="XP", value=mychar.xp, inline=False)
+    embedVar.add_field(name="Moves", value=mychar.moves, inline=False)
+    embedVar.set_thumbnail(url=mychar.picture)
     if len(mychar.notes)>0:
         embedVar.add_field(name="Notes", value=mychar.notes, inline=False)
     await ctx.channel.send(embed=embedVar)
+    await ctx.message.delete()
 
 #### SCENE FUNCTIONS #######
 
 @bot.group(invoke_without_command = True)
 async def scene(ctx):
-    for thescene in scenelist: #checking to make sure there isn't a scene already happening in this channel
-        if str(thescene.channel) == str(ctx.channel.id):
-            return
     await new(ctx)
 
 @scene.command()
@@ -244,33 +247,86 @@ async def info(ctx):
 async def help(ctx):
     await ctx.send("Use `!scene begin` to start a scene. End the scene with `!scene end`.\nYou can add your active character to the scene with `!scene join`. The DM can add NPCs to the scene with `!scene addnpc [name]`.")
 
+@scene.command()
+async def note(ctx):
+    pass
+    
 @bot.group(invoke_without_command = True)
 async def lookup(ctx):
-    await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up other things")
+    await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook")
 
 @lookup.command()
 async def monster(ctx, searchterm):
     datab = database.DBManager
     result = await datab.monster_lookup(ctx, searchterm)
-    print(result)
+    embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+    embedVar.add_field(name="Impulse", value=result[0][3], inline=False)
+    embedVar.add_field(name="Armor", value=result[0][4], inline=False)
+    embedVar.add_field(name="HP", value=result[0][5], inline=False)
+    attackstring = result[0][6]
+    attackstring=attackstring[1:-1]
+    attacks=json.loads(attackstring.replace("'", "\""))
+    attackname = attacks['name']
+    attackdmg = attacks['damage']
+    attacktags = ""
+    for tag in attacks['tags']:
+        attacktags = attacktags+"\n"+tag
+    embedVar.add_field(name=attackname, value=f"Damage: {attackdmg}\nAttack Tags: {attacktags}", inline=False)
+    tagoptions = result[0][7].replace("'", "\"")
+    tagoptions = json.loads(tagoptions)
+    tagstr = ""
+    for opt in tagoptions:
+        tagstr = tagstr + opt+"\n"
+    embedVar.add_field(name="Creature Tags", value=tagstr, inline=False)
+    moveoptions = result[0][8].replace("'", "\"")
+    moveoptions = json.loads(moveoptions)
+    movestr = ""
+    for opt in moveoptions:
+        movestr = movestr + opt+"\n"
+    embedVar.add_field(name="Moves", value=movestr, inline=False)
+    await ctx.message.delete()
+    await ctx.author.send(embed=embedVar)
+    await ctx.channel.send("Sent you a DM!")
 
 @lookup.command()
 async def item(ctx, searchterm):
     datab = database.DBManager
     result = await datab.eqmt_lookup(ctx, searchterm)
-    print(result)
-
+    tagdict = json.loads(result[0][2].replace("'", "\""))
+    tagstr = ""
+    for each in tagdict:
+        tagstr=tagstr+"\n"
+    embedVar = discord.Embed(title="Item: "+result[0][1], description="Tags: \n"+tagstr, color=0x00ff00)
+    await ctx.channel.send(embed=embedVar)
+    
 @lookup.command()
 async def playbook(ctx, searchterm):
     datab = database.DBManager
     result = await datab.playbook_lookup(ctx, searchterm)
-    print(result)
+    embedVar1 = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+    embedVar1.add_field(name="Load", value=result[0][3], inline=False)
+    embedVar1.add_field(name="Damage Die", value=result[0][5], inline=False)
+    embedVar1.add_field(name="Example Names", value=result[0][6], inline=False)
+    embedVar1.add_field(name="Example Bonds", value=result[0][7], inline=False)
+    embedVar1.add_field(name="Example Character Descriptors", value=result[0][8], inline=False)
+    embedVar1.add_field(name="Alignment", value=result[0][9] + result[0][10], inline=False)
+    embedVar1.add_field(name="Race Moves", value=result[0][11], inline=False)
+    await ctx.author.send(embed=embedVar1)
+    
+    startmvs = json.loads(result[0][12].replace("'", "\""))
+    for mv in startmvs:
+        embedVar = discord.Embed(title=result[0][1]+" Continued", description="", color=0x00ff00)
+        embedVar.add_field(name=mv['name'], value=mv['description'], inline=False)
+        await ctx.author.send(embed=embedVar)
+    await ctx.channel.send("Sent you a DM! (Wouldn't want to clog up chat...)")
 
 @lookup.command()
 async def move(ctx, searchterm):
     datab = database.DBManager
     result = await datab.move_lookup(ctx, searchterm)
-    print(result)
+    embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+    await ctx.channel.send(embed=embedVar)
+    await ctx.message.delete()
 
 @bot.event
 async def on_ready():

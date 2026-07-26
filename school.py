@@ -43,9 +43,10 @@ class Moves:
         self.key = key
 
 class Character:
-    def __init__(self, playbook, name, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, load, dmgdie, gear, notes, moves, xp, picture):
+    def __init__(self, playbook, name, level, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, load, dmgdie, gear, notes, moves, xp, picture):
         self.playbook = playbook
         self.name = name
+        self.level = level
         self.stats = [strength, dexterity, constitution, inteligence, wisdom, charisma]
         self.mod = [0]*6
         self.hp = hp
@@ -72,12 +73,6 @@ class Character:
             i=i+1
         self.hpmod = self.mod[2]
         self.hpmax = self.stats[2]+self.hpmod 
-
-    def view():
-        pass # something to show the character sheet, maybe as an embed
-
-    def edit(comp, newval):
-        pass # update stats
         
 class Scene:        
     def __init__(self, channel_id, message_id, dm_id):
@@ -89,34 +84,47 @@ class Scene:
         self.pinned = ""
         
     def update_pinned(self):
-        self.pinned = "" #clear it
+        self.pinned = "Scene Summary:\n**********************\n" #clear it
         for actor in self.actors:
-            print(actor)
-            self.pinned = self.pinned + actor + ": "
-        
+            self.pinned = self.pinned + actor + ": " + str(self.actors[actor])+"\n"
+
     def join(self, player_id):
-        self.actors[player_id] = []
+        self.actors[player_id] = 'No Notes Yet'
     
     def add_npc(self, npc_name):
-        self.actors[npc_name]=[]
+        self.actors[npc_name] = 'No Notes Yet'
     
-    def leave(self, player_id):
-        i=0
+    def leave(self, actor_name):
         for actor in self.actors:
-            if actor[0] == player_id:
-                self.actors.pop(i)
-            i=i+1
+            if actor == actor_name:
+                self.actors.pop(actor)
+                return
+            
 
     def add_note(self, actor_id, note):
-        for actor in self.actors:
-            if actor[0] == actor_id:
-                self.actor[1].append(note)
+        for each in self.actors:
+            if each == actor_id:
+                if self.actors[each] == 'No Notes Yet':
+                    self.actors[each]=note
+                else:
+                    notestr = self.actors[each]
+                    self.actors[each]=notestr+" || "+note
     
     def remove_note(self, actor_id, note):
-        for actor in self.actors:
-            if actor[0] == actor_id:
+        for each in self.actors:
+            if each == actor_id:
+                notestr = self.actors[each]
+                notelist = notestr.split(" || ")
+                delnote=False
                 i=0
-                for eachnote in actor[1]:
-                    if re.search(note, eachnote, re.I) is not None:
-                        actor[1].pop(i) 
+                for eachnote in notelist:
+                    if delnote == False and re.search(note, eachnote, re.I) is not None:
+                        notelist.pop(i)
+                        delnote = True
+                    else:
+                        pass
                     i=i+1
+                notestr = ""
+                for eachnote in notelist:
+                    notestr = notestr+eachnote + " || "
+                self.actors[each] = notestr[:len(notestr)-4]

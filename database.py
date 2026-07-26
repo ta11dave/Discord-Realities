@@ -41,10 +41,10 @@ class DBManager:
                 await db.execute(f"UPDATE user_registry SET charid = {char_ident} WHERE userid = {user_id};")
             await db.commit()
             #update char pile
-            await db.execute("CREATE TABLE IF NOT EXISTS char_data (id INTEGER PRIMARY KEY, playbook TEXT, name TEXT, str INTEGER, dex INTEGER, con INTEGER, int INTEGER, wis INTEGER, cha INTEGER, hp INTEGER, load INTEGER, dmgdie TEXT, gear TEXT, notes TEXT, moves TEXT, xp INTEGER, picture TEXT)")
+            await db.execute("CREATE TABLE IF NOT EXISTS char_data (id INTEGER PRIMARY KEY, playbook TEXT, name TEXT, level INTEGER, str INTEGER, dex INTEGER, con INTEGER, int INTEGER, wis INTEGER, cha INTEGER, hp INTEGER, load INTEGER, dmgdie TEXT, gear TEXT, notes TEXT, moves TEXT, xp INTEGER, picture TEXT)")
             await db.commit()
             # put in a blank character
-            await db.execute("INSERT INTO char_data (playbook, name, str, dex, con, int, wis, cha, hp, load, dmgdie, gear, notes, moves, xp, picture) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 10, 10, 10, 10, 10, 10, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg"))
+            await db.execute("INSERT INTO char_data (playbook, name, level, str, dex, con, int, wis, cha, hp, load, dmgdie, gear, notes, moves, xp, picture) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 1, 10, 10, 10, 10, 10, 10, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg"))
             await db.commit()
 
     async def XP_view(user_id):
@@ -295,18 +295,20 @@ class DBManager:
                 await db.execute(f"UPDATE char_data SET name = {newname} WHERE id = {mycharid};")
                 await db.commit()
                 return f"Name is now {newname}"
-            if myargs == "argss": #assumes 6 numbers will be coming next
+            if myargs == "stats": #assumes 6 numbers will be coming next
                 if len(args) < 6:
                     return
                 else:
-                    await db.execute(f"UPDATE char_data SET argss = {str(args[:6])} WHERE id = {mycharid};")
+                    await db.execute(f"UPDATE char_data SET stats = {str(args[:6])} WHERE id = {mycharid};")
                     await db.commit()
                 return f"argss are now {str(args[:6])}"
             if myargs == "hp": #INTEGER
                 async with db.execute("SELECT hp FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myhp = await cursor.fetchone()
-                if args[0][0] == "+" or args[0][0] == "-":
-                     myhp = myhp + int(args[0])
+                if args[0][0] == "+":
+                    myhp = myhp + int(args[0][1:])
+                elif args[0][0] == "-":
+                     myhp = myhp - int(args[0][1:])
                 else:
                     myhp = args[0]
                 await db.execute(f"UPDATE char_data SET hp = {myhp} WHERE id = {mycharid};")
@@ -341,15 +343,22 @@ class DBManager:
                 pass
             if myargs == "xp": #INTEGER
                 async with db.execute("SELECT xp FROM char_data WHERE id = ?", (mycharid,)) as cursor:
-                    myxp = await cursor.fetchone()
-                if args[0][0] == "+" or args[0][0] == "-":
-                     myxp = myxp + int(args[0])
-                else:
-                    myxp = args[0]
+                    myxp = await cursor.fetchone() #returns a tuple with no second value...?
+                    myxp = myxp[0]
+                try:
+                    if args[0][0] == '+':
+                        newamt = int(args[0][1:])
+                        myxp = myxp + newamt
+                    elif args[0][0] == '-':
+                        newamt = int(args[0][1:])
+                        myxp = myxp - newamt
+                    else:
+                        myxp = int(args[0])
+                except:
+                    print("not sure what you're trying to increase your xp by...?")
                 await db.execute(f"UPDATE char_data SET xp = {myxp} WHERE id = {mycharid};")
                 await db.commit()
-                print("xp update?")
-                return f"xp is now {myxp}"
+                return myxp
             if myargs == "picture": #TEXT
                 await db.execute(f"UPDATE char_data SET hp = {args[0]} WHERE id = {mycharid};")
                 await db.commit()
@@ -368,7 +377,7 @@ async def get_char_data(user_id):
     async with aiosqlite.connect(maindb) as db:
         async with db.execute("SELECT * FROM char_data WHERE id = ?", (char_id,)) as cursor:
             char_data = await cursor.fetchone()
-    return school.Character(char_data[1], char_data[2], char_data[3], char_data[4], char_data[5], char_data[6], char_data[7], char_data[8], char_data[9], char_data[10], char_data[11], char_data[12], char_data[13], char_data[14], char_data[15], char_data[16])
+    return school.Character(char_data[1], char_data[2], char_data[3], char_data[4], char_data[5], char_data[6], char_data[7], char_data[8], char_data[9], char_data[10], char_data[11], char_data[12], char_data[13], char_data[14], char_data[15], char_data[16], char_data[17])
         
 async def reset(): #Only use if the database file is deleted to build ot back from the raw json file
     datab = DBManager

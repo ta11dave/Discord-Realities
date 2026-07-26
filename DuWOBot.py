@@ -39,24 +39,35 @@ async def resetlookup(ctx):
         await database.reset()
 
 @bot.command()
-async def sheetimport(ctx):
-    # import a sheet by attaching a file
-    pass
-
-@bot.command()
-async def roll(ctx, stat="", *args):
+async def roll(ctx, *args):
     await ctx.message.delete()
-    if stat == "help":
-        await ctx.send("Use `!roll` to roll dice! The standard format should look something like `!roll dex +1 \"Discern Realities\" adv`")
-        return
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
     embedVar = discord.Embed(title=mychar.name +" makes a move!", description=ctx.author, color=0x00ff00)
     embedVar.set_thumbnail(url=mychar.picture)
-    stat = stat[:3].lower()
     rollstr = "2d6"
     myargs = []
     i=0
+    if args==():
+        args=["flat"]
+    if args[0][:3].lower() in ["str","dex","con","wis","int","cha"]:
+        stat = args[0][:3].lower()
+        args = args[1:]
+        if stat == "hel":
+            await ctx.send("Use `!roll` to roll dice! The standard format should look something like `!roll dex +1 \"Discern Realities\" adv`")
+            return
+        elif stat == "str":
+            rollstr = rollstr + "+"+ str(mychar.mod[0]) + " [str] "
+        elif stat == "dex":
+            rollstr = rollstr + "+"+ str(mychar.mod[1]) + " [dex] "
+        elif stat == "con":
+            rollstr = rollstr + "+"+ str(mychar.mod[2]) + " [con] "
+        elif stat == "int":
+            rollstr = rollstr + "+"+ str(mychar.mod[3]) + " [int] "
+        elif stat == "wis":
+            rollstr = rollstr + "+"+ str(mychar.mod[4]) + " [wis] "
+        elif stat == "cha":
+            rollstr = rollstr + "+"+ str(mychar.mod[5]) + " [cha] "
     for each in args:
         myargs.append(each)
     for arg in myargs:
@@ -68,36 +79,17 @@ async def roll(ctx, stat="", *args):
             myargs.pop(i)
         i=i+1
     for arg in myargs:
-        if arg[:1]== ("+" or "-"):
+        if arg[:1]=="+" or arg[:1]=="-":
             rollstr=rollstr+str(arg)
         else:
             rollstr = rollstr + " ["+arg+"] "
-
-    if stat == "str":
-        rollstr = rollstr + "+"+ str(mychar.mod[0])
-    elif stat == "dex":
-        rollstr = rollstr + "+"+ str(mychar.mod[1])
-    elif stat == "con":
-        rollstr = rollstr + "+"+ str(mychar.mod[2])
-    elif stat == "int":
-        rollstr = rollstr + "+"+ str(mychar.mod[3])
-    elif stat == "wis":
-        rollstr = rollstr + "+"+ str(mychar.mod[4])
-    elif stat == "cha":
-        rollstr = rollstr + "+"+ str(mychar.mod[5])
-    elif stat == "adv":
-        rollstr = "3d6kh2"
-    elif stat == "dis":
-        rollstr = "3d6kl2"
-    else:
-        pass
     
     theroll = d20.roll(rollstr)
     
     embedVar.add_field(name="", value=theroll, inline=False)
     if int(theroll.total)<= 6:
         embedVar.add_field(name="Result", value="Oh no. At least you got an XP.", inline=False)
-        #add an XP to the character
+        await datab.updatechar(ctx.author.id,["xp", "+1"])
     elif int(theroll.total) in [7,8,9]:
         embedVar.add_field(name="Result", value="Mixed Success.", inline=False)
     elif int(theroll.total)>9:
@@ -108,16 +100,16 @@ async def roll(ctx, stat="", *args):
     await ctx.channel.send(embed=embedVar)
 
 @bot.command()
-async def xp(ctx, amt=0):
+async def xp(ctx, amt="0"):
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
     embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
-    oldxp = await datab.XP_view(ctx.author.id)
-    if amt == 0:
+    oldxp = mychar.xp
+    if amt == "0":
         embedVar.add_field(name="XP", value="You have "+str(mychar.xp)+" xp.", inline=False)
     else:
-        newxp = await datab.updatechar("xp", amt)
-        embedVar.add_field(name="XP", value="Your XP went from "+str(oldxp)+" to "+str(mychar.xp)+"!", inline=False)
+        newxp = await datab.updatechar(ctx.author.id,["xp", amt])
+        embedVar.add_field(name="XP", value="Your XP went from "+str(oldxp)+" to "+str(newxp)+"!", inline=False)
     await ctx.channel.send(embed=embedVar)
 
 @bot.group(invoke_without_command = True)
@@ -211,14 +203,32 @@ async def end(ctx):
         if str(thescene.channel) == str(ctx.channel.id):
             scenelist.pop(i)
             message = await ctx.fetch_message(thescene.summary_message_id)
+            await ctx.send("`Scene Over! Recap:`")
+            await ctx.send("```\n"+thescene.pinned+"\n```")
             await message.unpin()
         i=i+1
 
 @scene.command()
-async def join(ctx):
+async def leave(ctx):
+    datab = database.DBManager
     try:  #if no character, stop
-        await ctx.send("gotta pull data from the database now")
-        return #remove this when figured out
+        mychar = await database.get_char_data(ctx.author.id)
+    except:
+        await ctx.send("Need a character!")
+        return
+    for thescene in scenelist:
+        if str(thescene.channel) == str(ctx.channel.id):
+            thescene.leave(mychar.name)
+            await ctx.send(f"`{mychar.name} has left the scene.`")
+            message = await ctx.fetch_message(thescene.summary_message_id)
+            thescene.update_pinned()
+            await message.edit(content="```\n"+thescene.pinned+"\n```")
+
+@scene.command()
+async def join(ctx):
+    datab = database.DBManager
+    try:  #if no character, stop
+        mychar = await database.get_char_data(ctx.author.id)
     except:
         await ctx.send("Need a character to join!")
         return
@@ -239,18 +249,69 @@ async def addnpc(ctx, *, npc_name = "NPC"):
             await message.edit(content="```\n"+thescene.pinned+"\n```") 
 
 @scene.command()
+async def npcleave(ctx, *, npc_name):
+    for thescene in scenelist:
+        if str(thescene.channel) == str(ctx.channel.id):
+            npcfound = False
+            for each in thescene.actors:
+                if npcfound == False and re.search(npc_name, each, re.I) is not None:
+                    npc_name = each
+                    npcfound = True
+            thescene.leave(npc_name)
+            await ctx.send(f"`{npc_name} has left the scene`")
+            message = await ctx.fetch_message(thescene.summary_message_id)
+            thescene.update_pinned()
+            await message.edit(content="```\n"+thescene.pinned+"\n```")
+
+@scene.command()
 async def info(ctx):
-    #print the scene pinned message here
-    pass
+    for thescene in scenelist:
+        if str(thescene.channel) == str(ctx.channel.id):
+            await cxt.send("```\n"+thescene.pinned+"\n```")
 
 @scene.command()
 async def help(ctx):
     await ctx.send("Use `!scene begin` to start a scene. End the scene with `!scene end`.\nYou can add your active character to the scene with `!scene join`. The DM can add NPCs to the scene with `!scene addnpc [name]`.")
 
 @scene.command()
-async def note(ctx):
-    pass
-    
+async def note(ctx, cmd, note):
+    datab = database.DBManager
+    mychar = await database.get_char_data(ctx.author.id)
+    for thescene in scenelist:
+        if str(thescene.channel) == str(ctx.channel.id):
+            if cmd == "add" or cmd == "+":
+                thescene.add_note(mychar.name, note)
+            elif cmd == "remove" or cmd == "-":
+                thescene.remove_note(mychar.name, note)
+            else:
+                pass
+            message = await ctx.fetch_message(thescene.summary_message_id)
+            thescene.update_pinned()
+            await message.edit(content="```\n"+thescene.pinned+"\n```")
+            
+
+@scene.command()
+async def npcnote(ctx, npc, cmd, note):
+    for thescene in scenelist:
+        if str(thescene.channel) == str(ctx.channel.id):
+            if ctx.author.id != thescene.dm_id:
+                ctx.send(f"Hey {ctx.author.id}, you didn't start this scene so you can't edit NPC notes")
+                return
+            npcfound = False
+            for each in thescene.actors:
+                if npcfound == False and re.search(npc, each, re.I) is not None:
+                    npc = each
+                    npcfound = True
+            if cmd == "add" or cmd == "+":
+                thescene.add_note(npc, note)
+            elif cmd == "remove" or cmd == "-":
+                thescene.remove_note(npc, note)
+            else:
+                pass
+            message = await ctx.fetch_message(thescene.summary_message_id)
+            thescene.update_pinned()
+            await message.edit(content="```\n"+thescene.pinned+"\n```")
+
 @bot.group(invoke_without_command = True)
 async def lookup(ctx):
     await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook")

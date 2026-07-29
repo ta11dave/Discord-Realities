@@ -272,19 +272,18 @@ class DBManager:
             for each in itemlist:
                 results = results + "* "+str(each) + "\n"
         else:
-            results = "Yeah idk man"
+            results = "No Moves found =("
         return results
         
     async def updatechar(user_id, args):
         mycharid = await active_char_id(user_id)
+        if str(args) == "help":
+            return "To use this function, you need to have made a character first. Format should look like:`!update playbook Paladin` \n `!update name John Smith` \n `!update stats 12 10 14 16 13 8` \n `!update hp +3` or `!update hp 12` \n `!update load +1` or `!update load 8` \n `!update dmgdie \"1d8+1d4\"` \n `!update gear add \"stuff\"` \n `!update notes add \"notes\"` \n `!update move \"I don't know how to implement this\"` \n `!update xp +1` or `!char update xp 7` \n `!update picture www.pictureurl.com`"
         myargs = str(args[0])
         args = args[1:]
         async with aiosqlite.connect(maindb) as db:
-            if myargs == "help":
-                return "To use this function, you need to have made a character first. Format should look like:`!char update playbook Paladin`\n`!char update name John Smith`\n`!char update argss 12 10 14 16 13 8`\n`!char update hp +3` or !char update hp 12`\n`!char update load +1` or `!char update load 8`\n`!char update dmgdie \"1d8+1d4\"`\n`!char update gear \"\"`\n`!char update notes \"notes\"\n`!char update move \"I don't know how to implement this\"\n`!char update xp +1` or `!char update xp 7`\n`!char update picture www.pictureurl.com`"
-                
             if myargs == "playbook": #text
-                await db.execute(f"UPDATE char_data SET playbook = {args} WHERE id = {mycharid};")
+                await db.execute(f"UPDATE char_data SET playbook = \"{args}\" WHERE id = {mycharid};")
                 await db.commit()
                 return f"Playbook is now {args}"
             if myargs == "name": #TEXT
@@ -292,25 +291,40 @@ class DBManager:
                 for each in args:
                     newname=newname+str(each)+" "
                 newname = str(newname[:len(newname)-1])
-                await db.execute(f"UPDATE char_data SET name = {newname} WHERE id = {mycharid};")
+                await db.execute(f"UPDATE char_data SET name = \"{newname}\" WHERE id = {mycharid};")
                 await db.commit()
                 return f"Name is now {newname}"
+            if myargs == "level":
+                await db.execute(f"UPDATE char_data SET level = {args[0]} WHERE id = {mycharid};")
+                await db.commit()
             if myargs == "stats": #assumes 6 numbers will be coming next
                 if len(args) < 6:
                     return
                 else:
-                    await db.execute(f"UPDATE char_data SET stats = {str(args[:6])} WHERE id = {mycharid};")
+                    statargs = args[:6]
+                    await db.execute(f"UPDATE char_data SET str = \"{statargs[0]}\" WHERE id = {mycharid};")
+                    await db.execute(f"UPDATE char_data SET dex = \"{statargs[1]}\" WHERE id = {mycharid};")
+                    await db.execute(f"UPDATE char_data SET con = \"{statargs[2]}\" WHERE id = {mycharid};")
+                    await db.execute(f"UPDATE char_data SET wis = \"{statargs[3]}\" WHERE id = {mycharid};")
+                    await db.execute(f"UPDATE char_data SET int = \"{statargs[4]}\" WHERE id = {mycharid};")
+                    await db.execute(f"UPDATE char_data SET cha = \"{statargs[5]}\" WHERE id = {mycharid};")
                     await db.commit()
-                return f"argss are now {str(args[:6])}"
+                return f"stats are now Strength: {statargs[0]}, Dexterity: {statargs[1]}, Constitution: {statargs[2]}, Wisdom: {statargs[3]}, Intelligence: {statargs[4]}, Charisma: {statargs[5]}"
             if myargs == "hp": #INTEGER
                 async with db.execute("SELECT hp FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myhp = await cursor.fetchone()
-                if args[0][0] == "+":
-                    myhp = myhp + int(args[0][1:])
-                elif args[0][0] == "-":
-                     myhp = myhp - int(args[0][1:])
-                else:
-                    myhp = args[0]
+                    myhp = int(myhp[0])
+                try:
+                    if args[0][0] == '+':
+                        newamt = int(args[0][1:])
+                        myhp = myhp + newamt
+                    elif args[0][0] == '-':
+                        newamt = int(args[0][1:])
+                        myhp = myhp - newamt
+                    else:
+                        myhp = int(args[0])
+                except:
+                    print("not sure what you're trying to increase your hp by...?")
                 await db.execute(f"UPDATE char_data SET hp = {myhp} WHERE id = {mycharid};")
                 await db.commit()
                 return f"HP is now {myhp}"
@@ -325,22 +339,103 @@ class DBManager:
                 await db.commit()
                 return f"load is now {myload}"
             if myargs == "dmgdie": #TEXT
-                await db.execute(f"UPDATE char_data SET hp = {args[0]} WHERE id = {mycharid};")
+                await db.execute(f"UPDATE char_data SET dmgdie = \"{args[0]}\" WHERE id = {mycharid};")
+                await db.commit()
+                return f"Damage Die is now: {args[0]}"
             if myargs == "gear": #TEXT
                 async with db.execute("SELECT gear FROM char_data WHERE id = ?", (mycharid,)) as cursor:
-                    myload = await cursor.fetchone()
+                    mygear = await cursor.fetchone()
                 await db.commit()
-                pass
-            if myargs == "notes": #TEXT
+                mygear = str(mygear[0])
+                if mygear == "None":
+                    mygear = ""
+                if args[0] == "+" or args[0] == "add":
+                    for each in args[1:]:
+                        if len(mygear)<1:
+                            mygear = str(each)
+                        else:
+                            mygear = mygear+", "+str(each)
+                    await db.execute(f"UPDATE char_data SET gear = \"{mygear}\" WHERE id = {mycharid};")
+                    await db.commit()
+                    return f"Added the following gear: {args[1:]}"
+                elif args[0] == "-" or args[0] == "remove":
+                    geararray = mygear.split(",")
+                    i = 0
+                    removedgear = ""
+                    for each in args[1:]:
+                        for gear in geararray:
+                            if re.search(each, gear, re.I) is not None:
+                                removedgear = removedgear + ", " + gear
+                                geararray.pop(i)
+                    i=i+1
+                    mygear = ",".join(geararray)
+                    await db.execute(f"UPDATE char_data SET gear = \"{mygear}\" WHERE id = {mycharid};")
+                    await db.commit()
+                    return f"Removed gear: {removedgear}"
+            if myargs == "note" or myargs == "notes": #TEXT
                 async with db.execute("SELECT notes FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     mynotes = await cursor.fetchone()
                 await db.commit()
-                pass
-            if myargs == "moves": #TEXT
+                mynote = str(mynotes[0])
+                if mynote == "None":
+                    mynote = ""
+                if args[0] == "+" or args[0] == "add":
+                    for each in args[1:]:
+                        if len(mynote)<1:
+                            mynote = str(each)
+                        else:
+                            mynote = mynote+"||"+str(each)
+                    await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
+                    await db.commit()
+                    return f"Added the following note: {args[1:]}"
+                elif args[0] == "-" or args[0] == "remove":
+                    notearray = mynote.split("||")
+                    i = 0
+                    removednote = ""
+                    for each in args[1:]:
+                        for note in notearray:
+                            if re.search(each, note, re.I) is not None:
+                                removednote = removednote + ", " + note
+                                notearray.pop(i)
+                    i=i+1
+                    mynote = "||".join(notearray)
+
+                    await db.execute(f"UPDATE char_data SET note = \"{mynote}\" WHERE id = {mycharid};")
+                    await db.commit()
+                    return f"Removed note: {removednote}"
+
+            if myargs == "moves" or myargs == "move": #TEXT
                 async with db.execute("SELECT moves FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     mymoves = await cursor.fetchone()
                 await db.commit()
-                pass
+                mymoves = mymoves[0]
+                if mymoves == "None":
+                    mymoves = ""
+                if args[0] == "+" or args[0] == "add":
+                    for each in args[1:]:
+                        if len(mymoves)<1:
+                            mymoves = str(each)
+                        else:
+                            mymoves = mymoves+"||"+str(each)
+                    await db.execute(f"UPDATE char_data SET moves = \"{mymoves}\" WHERE id = {mycharid};")
+                    await db.commit()
+                    return f"Added the following move: {args[1:]}"
+                elif args[0] == "-" or args[0] == "remove":
+                    movearray = mymoves.split("||")
+                    i = 0
+                    removedmove = ""
+                    for each in args[1:]:
+                        for move in movearray:
+                            if re.search(each, move, re.I) is not None:
+                                removedmove = removedmove + ", " + move
+                                movearray.pop(i)
+                    i=i+1
+                    mymove = "||".join(movearray)
+
+                await db.execute(f"UPDATE char_data SET moves = \"{mymove}\" WHERE id = {mycharid};")
+                await db.commit()
+                return f"Removed note: {removednote}"
+
             if myargs == "xp": #INTEGER
                 async with db.execute("SELECT xp FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myxp = await cursor.fetchone() #returns a tuple with no second value...?
@@ -360,7 +455,7 @@ class DBManager:
                 await db.commit()
                 return myxp
             if myargs == "picture": #TEXT
-                await db.execute(f"UPDATE char_data SET hp = {args[0]} WHERE id = {mycharid};")
+                await db.execute(f"UPDATE char_data SET hp = \"{args[0]}\" WHERE id = {mycharid};")
                 await db.commit()
                 return f"Picture is now {args[0]}"
 

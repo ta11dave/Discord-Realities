@@ -33,6 +33,22 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.command()
 async def test(ctx):
         print("scenelist: ", scenelist , "\n*\n")
+        mychar = await database.get_char_data(ctx.author.id)
+        print(mychar.playbook, " playbook")
+        print(mychar.name, " name")
+        print(mychar.level, " level")
+        print(mychar.stats, " stats")
+        print(mychar.mod, " mod")
+        print(mychar.hp, " hp")
+        print(mychar.load, " load")
+        print(mychar.dmgdie, " dmgdie")
+        print(mychar.gear, "gear")
+        print(mychar.notes, " notes")
+        print(mychar.moves, " moves")
+        print(mychar.xp, " xp")
+        print(mychar.picture, " picture")
+        print(mychar.hpmod, " hpmod")
+        print(mychar.hpmax, " hpmax")
 
 @bot.command()
 async def resetlookup(ctx):
@@ -50,6 +66,8 @@ async def roll(ctx, *args):
     i=0
     if args==():
         args=["flat"]
+    if args[0][:3].lower() == "dmg" or args[0].lower() == "damage":
+        rollstr = mychar.dmgdie
     if args[0][:3].lower() in ["str","dex","con","wis","int","cha"]:
         stat = args[0][:3].lower()
         args = args[1:]
@@ -85,17 +103,18 @@ async def roll(ctx, *args):
             rollstr = rollstr + " ["+arg+"] "
     
     theroll = d20.roll(rollstr)
-    
     embedVar.add_field(name="", value=theroll, inline=False)
-    if int(theroll.total)<= 6:
-        embedVar.add_field(name="Result", value="Oh no. At least you got an XP.", inline=False)
-        await datab.updatechar(ctx.author.id,["xp", "+1"])
-    elif int(theroll.total) in [7,8,9]:
-        embedVar.add_field(name="Result", value="Mixed Success.", inline=False)
-    elif int(theroll.total)>9:
-        embedVar.add_field(name="Result", value="Full Success!", inline=False)
-    else:
-        embedVar.add_field(name="Result", value="Something broke", inline=False)
+    
+    if "damage" not in rollstr:
+        if int(theroll.total)<= 6:
+            embedVar.add_field(name="Result", value="Oh no. At least you got an XP.", inline=False)
+            await datab.updatechar(ctx.author.id,["xp", "+1"])
+        elif int(theroll.total) in [7,8,9]:
+            embedVar.add_field(name="Result", value="Mixed Success.", inline=False)
+        elif int(theroll.total)>9:
+            embedVar.add_field(name="Result", value="Full Success!", inline=False)
+        else:
+            embedVar.add_field(name="Result", value="Something broke", inline=False)
     
     await ctx.channel.send(embed=embedVar)
 
@@ -112,6 +131,24 @@ async def xp(ctx, amt="0"):
         embedVar.add_field(name="XP", value="Your XP went from "+str(oldxp)+" to "+str(newxp)+"!", inline=False)
     await ctx.channel.send(embed=embedVar)
 
+@bot.command()
+async def movelist(ctx):
+    mychar = await database.get_char_data(ctx.author.id)
+    embedVar = discord.Embed(title="Move List", description="", color=0x00ff00)
+    embedVar.add_field(name="Basic Moves", value="Hack and Slash\nVolley\nDefy Danger\nDefend\nSpout Lore\nDiscern Realities\nParley\nAid or Interfere", inline=False)
+    embedVar.add_field(name="Special Moves", value="Last Breath\nEncumberance\nMake Camp\nTake Watch\nUndertake a Perilous Journey\nEnd of Session\nCarouse\nSupply\nRecover\nRecruit\nOutstanding Warrants\nBolster", inline=False)
+    # might have to stringify the character moves
+    embedVar.add_field(name=f"{mychar.name}'s Moves", value=mychar.moves, inline=False)
+    await ctx.channel.send(embed=embedVar)
+
+@bot.command()
+async def update(ctx, *args):
+    if len(args)<1:
+        args = "help"
+    datab=database.DBManager
+    responcetext = await datab.updatechar(ctx.author.id, args)
+    await ctx.send(responcetext)
+
 @bot.group(invoke_without_command = True)
 async def char(ctx):
     await ctx.send("Use `!char new [name]` to make a new character, `!char list` to see all your characters, and `char view` to see your current character.")
@@ -127,12 +164,23 @@ async def new(ctx, *args):
     charname = charname[:len(charname)-1] #taking the space out
     datab = database.DBManager
     await datab.newchar(ctx.author.id,charname)
-    await ctx.send(f"New character made named {charname}")
+    embedVar = discord.Embed(title=f"New Character: {charname}!", description="", color=0x00ff00)
+    embedVar.add_field(name="Your new character Exists!",value="You can update what's on your sheet with `!update`. You can also change to another character you may have with `!char set [name]` \nAlso, don't forget racial features, alignment, and bonds. These things are all good items to put in the notes section of the sheet.", inline=False)
+    await ctx.channel.send(embed=embedVar)
 
 @char.command()
-async def make(ctx, playbook):
-    #update all the stuff we already know
-    await ctx.send("Under Construction")
+async def levelup(ctx):
+    datab = database.DBManager
+    mychar = await database.get_char_data(ctx.author.id)#get current charname
+    if mychar.level >= 10:
+        await ctx.send("Level 10 is as high as it goes!")
+        return
+    if mychar.xp >= mychar.level+7:
+        await datab.updatechar(ctx.author.id,["level", mychar.level+1])
+        await datab.updatechar(ctx.author.id,["xp", str(mychar.xp-7)])
+        await ctx.send(f"Leveled up {mychar.name} to {mychar.level+1}! Increase a stat by one and add a new move!")
+    else:
+        await ctx.send(f"You have {mychar.xp} XP and need {mychar.level+7} XP to level up!")
 
 @char.command()
 async def set(ctx, charname):
@@ -146,12 +194,6 @@ async def set(ctx, charname):
             await datab.set(ctx.author.id, guy[0])
     await ctx.send(f"Switched from {oldcharname} to {newcharname}")
     await ctx.message.delete()
-
-@char.command()
-async def update(ctx, *args):
-    datab=database.DBManager
-    responcetext = await datab.updatechar(ctx.author.id, args)
-    print(responcetext)
 
 @char.command()
 async def list(ctx):
@@ -170,13 +212,17 @@ async def view(ctx):
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
     embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
-    embedVar.add_field(name="Class", value=mychar.playbook, inline=False)
-    embedVar.add_field(name="Name", value=mychar.name, inline=False)
-    embedVar.add_field(name="XP", value=mychar.xp, inline=False)
-    embedVar.add_field(name="Moves", value=mychar.moves, inline=False)
+    datastr = f"Playbook: {mychar.playbook}\nName: {mychar.name}\nLevel: {mychar.level}\nXP: {mychar.xp}\nDamage Die: {mychar.dmgdie}"
+    embedVar.add_field(name="Basic Info", value=datastr, inline=False)
+    statstr = f"Strength: {mychar.stats[0]} ({mychar.mod[0]}), Dexterity: {mychar.stats[1]} ({mychar.mod[1]}), Constitution: {mychar.stats[2]} ({mychar.mod[2]}), Wisdom: {mychar.stats[3]} ({mychar.mod[3]}), Intelligence: {mychar.stats[4]} ({mychar.mod[4]}), Charisma: {mychar.stats[5]} ({mychar.mod[5]})"
+    embedVar.add_field(name="Stats", value=statstr, inline=False)
+    embedVar.add_field(name="Health", value=f"{mychar.hp} of {mychar.hpmax} HP", inline=False)
+    embedVar.add_field(name="Inventory", value=mychar.gear+f"\n\nLoad:{mychar.load}", inline=False)
+    mymoves=mychar.moves.replace("||","\n")
+    embedVar.add_field(name="Moves", value=mymoves, inline=False)
+    mynotes=mychar.notes.replace("||","\n")
+    embedVar.add_field(name="Notes", value=mynotes, inline=False)
     embedVar.set_thumbnail(url=mychar.picture)
-    if len(mychar.notes)>0:
-        embedVar.add_field(name="Notes", value=mychar.notes, inline=False)
     await ctx.channel.send(embed=embedVar)
     await ctx.message.delete()
 
@@ -385,7 +431,12 @@ async def playbook(ctx, searchterm):
 async def move(ctx, searchterm):
     datab = database.DBManager
     result = await datab.move_lookup(ctx, searchterm)
-    embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+    print(result)
+    try:
+        print(result[0][1])
+        embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+    except:
+        embedVar = discord.Embed(title="", description=result, color=0x00ff00)
     await ctx.channel.send(embed=embedVar)
     await ctx.message.delete()
 

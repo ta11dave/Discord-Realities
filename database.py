@@ -104,6 +104,7 @@ class DBManager:
             await db.commit()
     
     async def move_lookup(ctx, search):
+        hbdb = str(ctx.guild.id)+".db"
         movnames = []
         movlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -147,6 +148,7 @@ class DBManager:
         return results
 
     async def playbook_lookup(ctx, search):
+        hbdb = str(ctx.guild.id)+".db"
         playnames = []
         playlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -190,6 +192,7 @@ class DBManager:
         return results
 
     async def monster_lookup(ctx, search):
+        hbdb = str(ctx.guild.id)+".db"
         monnames = []
         monlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -233,6 +236,7 @@ class DBManager:
         return results
 
     async def eqmt_lookup(ctx, search):
+        hbdb = str(ctx.guild.id)+".db"
         itemnames = []
         itemlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -434,7 +438,7 @@ class DBManager:
 
                 await db.execute(f"UPDATE char_data SET moves = \"{mymove}\" WHERE id = {mycharid};")
                 await db.commit()
-                return f"Removed note: {removednote}"
+                return f"Removed note: {removedmove}"
 
             if myargs == "xp": #INTEGER
                 async with db.execute("SELECT xp FROM char_data WHERE id = ?", (mycharid,)) as cursor:

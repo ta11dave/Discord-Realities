@@ -1,5 +1,19 @@
 import re
+import discord
+import database
+from discord.ext import commands
+from discord.ui import view
 #all the classes, of course
+
+class ButtonView(discord.ui.View):
+    def __init__(self, ctx):
+        super().__init__(timeout=30)
+        self.ctx = ctx
+
+    @discord.ui.button(label='Click to Delete', style=discord.ButtonStyle.red)
+    async def del_click(self, interaction, button):
+        await database.DBManager.del_char(self.ctx.author.id)
+        await interaction.response.send_message("DELETED")
 
 class Monster:
     def __init__(self, description, instinct, armor, hp, attacks, name, tags, moves, key):

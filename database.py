@@ -52,6 +52,15 @@ class DBManager:
             char_id = await active_char_id(user_id)
             async with db.execute("SELECT xp FROM char_data WHERE name = ?", (char_id,)) as cursor:
                 return cursor
+    
+    async def del_char(user_id):
+        async with aiosqlite.connect(maindb) as db:
+            char_id = await active_char_id(user_id)
+            await db.execute(f"DELETE FROM character_registry WHERE id = {char_id}")
+            await db.execute(f"DELETE FROM char_data WHERE id = {char_id}")
+            await db.commit()
+            return "The deed is done"
+    
         
     #function that returns all characters belonging to a user
     async def charlist(user_id):
@@ -104,7 +113,10 @@ class DBManager:
             await db.commit()
     
     async def move_lookup(ctx, search):
-        hbdb = str(ctx.guild.id)+".db"
+        try:
+            hbdb = str(ctx.guild.id)+".db"
+        except:
+            pass
         movnames = []
         movlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -130,15 +142,19 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM moves WHERE name = ?", (movlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results1 = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM moves WHERE name = ?", (movlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results2 = await cursor.fetchall()
             except: 
-                pass
+                await ctx.send("Can't lookup homebrew in a DM, gotta pull it up in a server.")
+            if results2 == []:
+                results = results1
+            else:
+                results = results2
         elif len(movlist) >1:
             results = "# Multiple Matches\n"
             for each in movlist:
@@ -287,6 +303,7 @@ class DBManager:
         args = args[1:]
         async with aiosqlite.connect(maindb) as db:
             if myargs == "playbook": #text
+                args = str(args)
                 await db.execute(f"UPDATE char_data SET playbook = \"{args}\" WHERE id = {mycharid};")
                 await db.commit()
                 return f"Playbook is now {args}"
@@ -335,10 +352,14 @@ class DBManager:
             if myargs == "load": #INTEGER
                 async with db.execute("SELECT load FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myload = await cursor.fetchone()
-                if args[0][0] == "+" or args[0][0] == "-":
-                     myload = myload + int(args[0])
-                else:
-                    myload = args[0]
+                    myload = int(myload[0])
+                try:
+                    if args[0][0] == "+" or args[0][0] == "-":
+                         myload = myload + int(args[0])
+                    else:
+                        myload = args[0]
+                except:
+                    return "Something went wrong with updating Load"
                 await db.execute(f"UPDATE char_data SET hp = {myload} WHERE id = {mycharid};")
                 await db.commit()
                 return f"load is now {myload}"
@@ -403,7 +424,6 @@ class DBManager:
                                 notearray.pop(i)
                     i=i+1
                     mynote = "||".join(notearray)
-
                     await db.execute(f"UPDATE char_data SET note = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Removed note: {removednote}"

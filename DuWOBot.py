@@ -1,6 +1,7 @@
 # This example requires the 'message_content' intent.
 import discord
 from discord.ext import commands
+from discord.ui import view
 import os
 from dotenv import load_dotenv
 import re
@@ -170,6 +171,71 @@ async def new(ctx, *args):
     await ctx.channel.send(embed=embedVar)
 
 @char.command()
+
+async def make(ctx, playbook):
+    datab = database.DBManager
+    myplaybook = await datab.playbook_lookup(ctx,playbook)
+    mychar = await database.get_char_data(ctx.author.id)
+    if str(playbook).lower() in str(mychar.playbook):
+        await ctx.send("You're already using that playbook")
+    else:
+        myplaybook = myplaybook[0]
+        # name,description,load,base_hp,damage,names,bonds,looks,alignments,alignments_list,race_moves,starting_moves,advanced_moves_1,advanced_moves_2,gear_choices,key
+        plbkobj= school.Playbook(myplaybook[1],myplaybook[2],myplaybook[3],myplaybook[4],myplaybook[5],myplaybook[6],myplaybook[7],myplaybook[8],myplaybook[9],myplaybook[10],myplaybook[11],myplaybook[12],myplaybook[13],myplaybook[14],myplaybook[15],myplaybook[1])
+        # args expects strings
+        await datab.updatechar(ctx.author.id, ["playbook", plbkobj.name])
+        await datab.updatechar(ctx.author.id, ["hp", str(int(plbkobj.base_hp) + mychar.stats[2])])
+        await datab.updatechar(ctx.author.id, ["load", str(mychar.mod[0] + int(plbkobj.load))])
+        await datab.updatechar(ctx.author.id, ["dmgdie", "1"+plbkobj.damage])
+        starting_moves = plbkobj.starting_moves.replace("\'","\"")
+        starting_moves = json.loads(starting_moves)
+        for each in starting_moves:
+            await datab.updatechar(ctx.author.id, ["move","add", each["name"]])
+        embedVar = discord.Embed(title="Updated! Next Steps", description="Your playbook, hp, load, Damage die, and starting moves have been imported.\nCheck the playbook itself if there's a move you should *not* have, since some have you make a choice between two.\n\nThe rest of this stuff goes in your notes, which you can update with `!update note add [info]`", color=0x00ff00)
+        looksdmp = json.loads(plbkobj.looks.replace("'", "\""))
+        try:
+            looksstr = ""
+            for each in looksdmp:
+                looksstr = looksstr + str(each) + "\n"
+            embedVar.add_field(name="Look",value=looksstr, inline=False)
+        except:
+            embedVar.add_field(name="Look",value=plbkobj.looks, inline=False)
+        try:
+            racedmp = json.loads(str(plbkobj.race_moves).replace("'", "\""))
+            racestr = ""
+            for each in racedmp:
+                racestr = racestr + each['name']+": "+each['description'] + "\n"
+            embedVar.add_field(name="Race",value=racestr, inline=False)
+        except:
+            embedVar.add_field(name="Race",value=plbkobj.race_moves, inline=False)
+        try:
+            alignmentdmp = json.loads(str(plbkobj.alignments_list).replace("'", "\""))
+            alignmentstr = ""
+            for each in alignmentdmp:
+                alignmentstr = alignmentstr + each['name']+": "+each['description']+ "\n"
+            embedVar.add_field(name="Alignments",value=alignmentstr, inline=False)
+        except:
+            embedVar.add_field(name="Alignments",value=plbkobj.alignments_list, inline=False)
+        try:
+            bonddmp = json.loads(str(plbkobj.bonds).replace("'", "\""))
+            bondstr = ""
+            for each in bonddmp:
+                bondstr = bondstr + each+"\n"
+            embedVar.add_field(name="Example Bonds",value=bondstr, inline=False)
+        except:
+            embedVar.add_field(name="Example Bonds",value=plbkobj.bonds, inline=False)
+        embedVar.add_field(name="Gear",value="Look at the playbook to see what gear is available. You can add it with `!update gear add [item]`. It works like the note module, but know you can use `!lookup item [item] to get names and tags of things.`", inline=False)
+        await ctx.channel.send(embed=embedVar)
+        
+
+@char.command()
+async def delete(ctx):
+    mychar = await database.get_char_data(ctx.author.id)
+    datab = database.DBManager
+    myview = school.ButtonView(ctx)
+    await ctx.send(f"Do you want to delete your current active character: {mychar.name}?",view = myview)
+        
+@char.command()
 async def levelup(ctx):
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)#get current charname
@@ -186,8 +252,11 @@ async def levelup(ctx):
 @char.command()
 async def set(ctx, charname):
     datab = database.DBManager
-    mychar = await database.get_char_data(ctx.author.id)#get current charname
-    oldcharname = mychar.name
+    try:
+        mychar = await database.get_char_data(ctx.author.id)#get current charname
+        oldcharname = mychar.name
+    except:
+        oldcharname = "Deleted character"
     charlist = await datab.charlist(ctx.author.id)
     for guy in charlist:
         if re.search(charname,guy[1]) is not None:
@@ -211,20 +280,23 @@ async def list(ctx):
 @char.command()
 async def view(ctx):
     datab = database.DBManager
-    mychar = await database.get_char_data(ctx.author.id)
-    embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
-    datastr = f"Playbook: {mychar.playbook}\nName: {mychar.name}\nLevel: {mychar.level}\nXP: {mychar.xp}\nDamage Die: {mychar.dmgdie}"
-    embedVar.add_field(name="Basic Info", value=datastr, inline=False)
-    statstr = f"Strength: {mychar.stats[0]} ({mychar.mod[0]}), Dexterity: {mychar.stats[1]} ({mychar.mod[1]}), Constitution: {mychar.stats[2]} ({mychar.mod[2]}), Wisdom: {mychar.stats[3]} ({mychar.mod[3]}), Intelligence: {mychar.stats[4]} ({mychar.mod[4]}), Charisma: {mychar.stats[5]} ({mychar.mod[5]})"
-    embedVar.add_field(name="Stats", value=statstr, inline=False)
-    embedVar.add_field(name="Health", value=f"{mychar.hp} of {mychar.hpmax} HP", inline=False)
-    embedVar.add_field(name="Inventory", value=mychar.gear+f"\n\nLoad:{mychar.load}", inline=False)
-    mymoves=mychar.moves.replace("||","\n")
-    embedVar.add_field(name="Moves", value=mymoves, inline=False)
-    mynotes=mychar.notes.replace("||","\n")
-    embedVar.add_field(name="Notes", value=mynotes, inline=False)
-    embedVar.set_thumbnail(url=mychar.picture)
-    await ctx.channel.send(embed=embedVar)
+    try:
+        mychar = await database.get_char_data(ctx.author.id)
+        embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
+        datastr = f"Playbook: {mychar.playbook}\nName: {mychar.name}\nLevel: {mychar.level}\nXP: {mychar.xp}\nDamage Die: {mychar.dmgdie}"
+        embedVar.add_field(name="Basic Info", value=datastr, inline=False)
+        statstr = f"Strength: {mychar.stats[0]} ({mychar.mod[0]}), Dexterity: {mychar.stats[1]} ({mychar.mod[1]}), Constitution: {mychar.stats[2]} ({mychar.mod[2]}), Wisdom: {mychar.stats[3]} ({mychar.mod[3]}), Intelligence: {mychar.stats[4]} ({mychar.mod[4]}), Charisma: {mychar.stats[5]} ({mychar.mod[5]})"
+        embedVar.add_field(name="Stats", value=statstr, inline=False)
+        embedVar.add_field(name="Health", value=f"{mychar.hp} of {mychar.hpmax} HP", inline=False)
+        embedVar.add_field(name="Inventory", value=mychar.gear+f"\n\nLoad:{mychar.load}", inline=False)
+        mymoves=mychar.moves.replace("||","\n")
+        embedVar.add_field(name="Moves", value=mymoves, inline=False)
+        mynotes=mychar.notes.replace("||","\n")
+        embedVar.add_field(name="Notes", value=mynotes, inline=False)
+        embedVar.set_thumbnail(url=mychar.picture)
+        await ctx.channel.send(embed=embedVar)
+    except:
+        ctx.send("You don't have an active character to view.")
     await ctx.message.delete()
 
 #### SCENE FUNCTIONS #######
@@ -314,7 +386,7 @@ async def npcleave(ctx, *, npc_name):
 async def info(ctx):
     for thescene in scenelist:
         if str(thescene.channel) == str(ctx.channel.id):
-            await cxt.send("```\n"+thescene.pinned+"\n```")
+            await ctx.channel.send("```\n"+thescene.pinned+"\n```")
 
 @scene.command()
 async def help(ctx):
@@ -432,21 +504,35 @@ async def playbook(ctx, searchterm):
 async def move(ctx, searchterm):
     datab = database.DBManager
     result = await datab.move_lookup(ctx, searchterm)
-    print(result)
     try:
-        print(result[0][1])
+        print("this has to exist for the try to work: ", result[0][1])
         embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
     except:
         embedVar = discord.Embed(title="", description=result, color=0x00ff00)
     await ctx.channel.send(embed=embedVar)
-    await ctx.message.delete()
+    try:
+        await ctx.message.delete()
+    except:
+        pass
 
 #*********** QOL Commands and homebrew ******************
 
 @bot.command()
-async def moves(ctx):
+async def m(ctx):
     #get all the moves from the person, and then run lookup on them
-    pass
+    mychar = await database.get_char_data(ctx.author.id)
+    movelist = mychar.moves.split("||")
+    for each in movelist:
+        datab = database.DBManager
+        result = await datab.move_lookup(ctx, each)
+        try:
+            print("this has to exist for the try to work: ", result[0][1])
+            embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+        except:
+            embedVar = discord.Embed(title="Error", description=result, color=0x00ff00)
+        await ctx.author.send(embed=embedVar)
+    await ctx.channel.send("Sent you a DM!")
+    
 
 @bot.group(invoke_without_command = True)
 async def hbimport(ctx, *args):
@@ -478,7 +564,9 @@ async def hbimport(ctx, *args):
             await datab.add_monster(mymon,dbname)
             await ctx.send(f"Added homebrew monster {name} to server database!")
         except:
-            await ctx.send("monster help message")
+            await ctx.send("Format is: `!hbimport monster [name] [descrition] [instinct] [armor (integer)] [hp (integer)] [attacks (json as a string)] [moves]")
+            await ctx.send("The [attack] should be formatted like: `[{'name': 'Sword', 'damage': 'd6', 'tags': ['close']}]`")
+            await ctx.send("The [tags] and [moves] should be formatted like: `['Steal something', 'Demand tribute']`")
     elif args[0] == "playbook":        
         try:
             name = args[1]

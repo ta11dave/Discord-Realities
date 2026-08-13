@@ -41,10 +41,10 @@ class DBManager:
                 await db.execute(f"UPDATE user_registry SET charid = {char_ident} WHERE userid = {user_id};")
             await db.commit()
             #update char pile
-            await db.execute("CREATE TABLE IF NOT EXISTS char_data (id INTEGER PRIMARY KEY, playbook TEXT, name TEXT, level INTEGER, str INTEGER, dex INTEGER, con INTEGER, int INTEGER, wis INTEGER, cha INTEGER, hp INTEGER, load INTEGER, dmgdie TEXT, gear TEXT, notes TEXT, moves TEXT, xp INTEGER, picture TEXT)")
+            await db.execute("CREATE TABLE IF NOT EXISTS char_data (id INTEGER PRIMARY KEY, playbook TEXT, name TEXT, level INTEGER, str INTEGER, dex INTEGER, con INTEGER, int INTEGER, wis INTEGER, cha INTEGER, hp INTEGER, hpmod INTEGER, load INTEGER, dmgdie TEXT, gear TEXT, notes TEXT, moves TEXT, xp INTEGER, picture TEXT, coin INTEGER)")
             await db.commit()
             # put in a blank character
-            await db.execute("INSERT INTO char_data (playbook, name, level, str, dex, con, int, wis, cha, hp, load, dmgdie, gear, notes, moves, xp, picture) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 1, 10, 10, 10, 10, 10, 10, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg"))
+            await db.execute("INSERT INTO char_data (playbook, name, level, str, dex, con, int, wis, cha, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 1, 10, 10, 10, 10, 10, 10, 0, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg", 0))
             await db.commit()
 
     async def XP_view(user_id):
@@ -76,7 +76,7 @@ class DBManager:
         async with aiosqlite.connect(maindb) as db:
             await db.execute(f"UPDATE user_registry SET charid = {char_ident} WHERE userid = {user_id};")
             await db.commit()
-            
+        
     async def add_monster(mclass, database_name):
         #a check to make sure there's a database to pull from
         async with aiosqlite.connect(database_name) as db:
@@ -98,13 +98,34 @@ class DBManager:
             await db.execute("INSERT INTO playbooks (name,description,load,base_hp,damage,names,bonds,looks,alignments,alignments_list,race_moves,starting_moves,advanced_moves,gear_choices,key) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (playbookclass.name,playbookclass.description,playbookclass.load,playbookclass.base_hp,playbookclass.damage,str(playbookclass.names),str(playbookclass.bonds),str(playbookclass.looks),str(playbookclass.alignments),str(playbookclass.alignments_list),str(playbookclass.race_moves),str(playbookclass.starting_moves),str(playbookclass.advanced_moves),str(playbookclass.gear_choices),playbookclass.key))
             await db.commit()
     
+    async def pull_names(ctx, table):
+        if table not in ["playbooks", "moves", "eqmt", "monsters"]:
+            return ["You're asking for a table that doesn't exist"]
+        results = []
+        try:
+            hbdb = str(ctx.guild.id)+".db"
+        except:
+            pass
+        async with aiosqlite.connect(maindb) as db:
+            async with db.execute(f"SELECT name FROM {table}") as cursor:
+                async for row in cursor:
+                    results.append(row)
+        try:
+            async with aiosqlite.connect(hbdb) as db:
+                async with db.execute(f"SELECT name FROM {table}") as cursor:
+                    async for row in cursor:
+                        results.append(row)
+        except:
+            pass
+        return results
+    
     async def add_move(moveclass, database_name):
         async with aiosqlite.connect(database_name) as db:
             await db.execute("CREATE TABLE IF NOT EXISTS moves(id INTEGER PRIMARY KEY, name TEXT, description TEXT, key TEXT)")
             #unpack into variables
             await db.execute("INSERT INTO moves (name,description,key) VALUES (?,?,?)", (moveclass.name, moveclass.description, moveclass.key))
             await db.commit()
-
+    
     async def add_eqmt(eqmtclass, database_name):
         async with aiosqlite.connect(database_name) as db:
             await db.execute("CREATE TABLE IF NOT EXISTS eqmt(id INTEGER PRIMARY KEY, name TEXT, tags TEXT)")
@@ -294,7 +315,7 @@ class DBManager:
         else:
             results = "No Moves found =("
         return results
-        
+    
     async def updatechar(user_id, args):
         mycharid = await active_char_id(user_id)
         if str(args) == "help":
@@ -349,6 +370,24 @@ class DBManager:
                 await db.execute(f"UPDATE char_data SET hp = {myhp} WHERE id = {mycharid};")
                 await db.commit()
                 return f"HP is now {myhp}"
+            if myargs == "hpmod": #INTEGER - ONLY FROM PLAYBOOK
+                async with db.execute("SELECT hpmod FROM char_data WHERE id = ?", (mycharid,)) as cursor:
+                    myhpmod = await cursor.fetchone()
+                    myhpmod = int(myhpmod[0])
+                try:
+                    if args[0][0] == '+':
+                        newamt = int(args[0][1:])
+                        myhpmod = myhpmod + newamt
+                    elif args[0][0] == '-':
+                        newamt = int(args[0][1:])
+                        myhpmod = myhpmod - newamt
+                    else:
+                        myhpmod = int(args[0])
+                except:
+                    print("not sure what you're trying to increase your hpmod by...?")
+                await db.execute(f"UPDATE char_data SET hpmod = {myhpmod} WHERE id = {mycharid};")
+                await db.commit()
+                return f"HPmod is now {myhpmod}"
             if myargs == "load": #INTEGER
                 async with db.execute("SELECT load FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myload = await cursor.fetchone()
@@ -360,7 +399,7 @@ class DBManager:
                         myload = args[0]
                 except:
                     return "Something went wrong with updating Load"
-                await db.execute(f"UPDATE char_data SET hp = {myload} WHERE id = {mycharid};")
+                await db.execute(f"UPDATE char_data SET load = {myload} WHERE id = {mycharid};")
                 await db.commit()
                 return f"load is now {myload}"
             if myargs == "dmgdie": #TEXT
@@ -379,18 +418,18 @@ class DBManager:
                         if len(mygear)<1:
                             mygear = str(each)
                         else:
-                            mygear = mygear+", "+str(each)
+                            mygear = mygear+"%%"+str(each)
                     await db.execute(f"UPDATE char_data SET gear = \"{mygear}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Added the following gear: {args[1:]}"
                 elif args[0] == "-" or args[0] == "remove":
-                    geararray = mygear.split(",")
+                    geararray = mygear.split("%%")
                     i = 0
                     removedgear = ""
                     for each in args[1:]:
                         for gear in geararray:
                             if re.search(each, gear, re.I) is not None:
-                                removedgear = removedgear + ", " + gear
+                                removedgear = removedgear + "%%" + gear
                                 geararray.pop(i)
                     i=i+1
                     mygear = ",".join(geararray)
@@ -409,12 +448,12 @@ class DBManager:
                         if len(mynote)<1:
                             mynote = str(each)
                         else:
-                            mynote = mynote+"||"+str(each)
+                            mynote = mynote+"%%"+str(each)
                     await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Added the following note: {args[1:]}"
                 elif args[0] == "-" or args[0] == "remove":
-                    notearray = mynote.split("||")
+                    notearray = mynote.split("%%")
                     i = 0
                     removednote = ""
                     for each in args[1:]:
@@ -423,11 +462,10 @@ class DBManager:
                                 removednote = removednote + ", " + note
                                 notearray.pop(i)
                     i=i+1
-                    mynote = "||".join(notearray)
+                    mynote = "%%".join(notearray)
                     await db.execute(f"UPDATE char_data SET note = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Removed note: {removednote}"
-
             if myargs == "moves" or myargs == "move": #TEXT
                 async with db.execute("SELECT moves FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     mymoves = await cursor.fetchone()
@@ -440,12 +478,12 @@ class DBManager:
                         if len(mymoves)<1:
                             mymoves = str(each)
                         else:
-                            mymoves = mymoves+"||"+str(each)
+                            mymoves = mymoves+"%%"+str(each)
                     await db.execute(f"UPDATE char_data SET moves = \"{mymoves}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Added the following move: {args[1:]}"
                 elif args[0] == "-" or args[0] == "remove":
-                    movearray = mymoves.split("||")
+                    movearray = mymoves.split("%%")
                     i = 0
                     removedmove = ""
                     for each in args[1:]:
@@ -454,7 +492,8 @@ class DBManager:
                                 removedmove = removedmove + ", " + move
                                 movearray.pop(i)
                     i=i+1
-                    mymove = "||".join(movearray)
+                    mymove = "%%".join(movearray)
+                
 
                 await db.execute(f"UPDATE char_data SET moves = \"{mymove}\" WHERE id = {mycharid};")
                 await db.commit()
@@ -478,8 +517,26 @@ class DBManager:
                 await db.execute(f"UPDATE char_data SET xp = {myxp} WHERE id = {mycharid};")
                 await db.commit()
                 return myxp
+            if myargs == "coin": #INTEGER
+                async with db.execute("SELECT coin FROM char_data WHERE id = ?", (mycharid,)) as cursor:
+                    mycoin = await cursor.fetchone() #returns a tuple with no second value...?
+                    mycoin = mycoin[0]
+                try:
+                    if args[0][0] == '+':
+                        newamt = int(args[0][1:])
+                        mycoin = mycoin + newamt
+                    elif args[0][0] == '-':
+                        newamt = int(args[0][1:])
+                        mycoin = mycoin - newamt
+                    else:
+                        mycoin = int(args[0])
+                except:
+                    print("not sure what you're trying to increase your coin by...?")
+                await db.execute(f"UPDATE char_data SET coin = {mycoin} WHERE id = {mycharid};")
+                await db.commit()
+                return mycoin
             if myargs == "picture": #TEXT
-                await db.execute(f"UPDATE char_data SET hp = \"{args[0]}\" WHERE id = {mycharid};")
+                await db.execute(f"UPDATE char_data SET picture = \"{args[0]}\" WHERE id = {mycharid};")
                 await db.commit()
                 return f"Picture is now {args[0]}"
 
@@ -496,7 +553,7 @@ async def get_char_data(user_id):
     async with aiosqlite.connect(maindb) as db:
         async with db.execute("SELECT * FROM char_data WHERE id = ?", (char_id,)) as cursor:
             char_data = await cursor.fetchone()
-    return school.Character(char_data[1], char_data[2], char_data[3], char_data[4], char_data[5], char_data[6], char_data[7], char_data[8], char_data[9], char_data[10], char_data[11], char_data[12], char_data[13], char_data[14], char_data[15], char_data[16], char_data[17])
+    return school.Character(char_data[1], char_data[2], char_data[3], char_data[4], char_data[5], char_data[6], char_data[7], char_data[8], char_data[9], char_data[10], char_data[11], char_data[12], char_data[13], char_data[14], char_data[15], char_data[16], char_data[17], char_data[18], char_data[19])
         
 async def reset(): #Only use if the database file is deleted to build ot back from the raw json file
     datab = DBManager

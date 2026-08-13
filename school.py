@@ -7,14 +7,18 @@ from discord.ui import view
 
 class ButtonView(discord.ui.View):
     def __init__(self, ctx):
-        super().__init__(timeout=30)
+        super().__init__(timeout=180)
         self.ctx = ctx
 
     @discord.ui.button(label='Click to Delete', style=discord.ButtonStyle.red)
     async def del_click(self, interaction, button):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(f"Hey <@{interaction.user.id}>, you can't delete <@{self.ctx.author.id}>'s character! Got my eye on you, buddy.")
+            return
         await database.DBManager.del_char(self.ctx.author.id)
-        await interaction.response.send_message("DELETED")
-
+        button.disabled = True
+        await interaction.response.send_message("DELETED!\nUse `!char list` to see who else you have, `!char set [name]` to make another character of yours active, or `!char new [name]` to make a new character.", ephemeral=True)
+        
 class Monster:
     def __init__(self, description, instinct, armor, hp, attacks, name, tags, moves, key):
         self.description = description
@@ -57,7 +61,7 @@ class Moves:
         self.key = key
 
 class Character:
-    def __init__(self, playbook, name, level, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, load, dmgdie, gear, notes, moves, xp, picture):
+    def __init__(self, playbook, name, level, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin):
         self.playbook = playbook
         self.name = name
         self.level = level
@@ -85,8 +89,9 @@ class Character:
                 case 18:
                     self.mod[i] = 3
             i=i+1
-        self.hpmod = self.mod[2]
+        self.hpmod = hpmod #from playbook
         self.hpmax = self.stats[2]+self.hpmod 
+        self.coin = coin
         
 class Scene:        
     def __init__(self, channel_id, message_id, dm_id):
@@ -94,13 +99,13 @@ class Scene:
         self.summary_message_id = int(message_id)  # readonly
         self.dm_id = int(dm_id)
         self.actors = {} #a dictionary of a player_id and an array of strings
-        self.round_num = []
         self.pinned = ""
         
     def update_pinned(self):
         self.pinned = "Scene Summary:\n**********************\n" #clear it
         for actor in self.actors:
-            self.pinned = self.pinned + actor + ": " + str(self.actors[actor])+"\n"
+            formattedstr = str(self.actors[actor]).replace("%%", "\n  *- ")
+            self.pinned = self.pinned + actor + ": " + formattedstr +"\n"
 
     def join(self, player_id):
         self.actors[player_id] = 'No Notes Yet'
@@ -113,7 +118,6 @@ class Scene:
             if actor == actor_name:
                 self.actors.pop(actor)
                 return
-            
 
     def add_note(self, actor_id, note):
         for each in self.actors:
@@ -122,16 +126,17 @@ class Scene:
                     self.actors[each]=note
                 else:
                     notestr = self.actors[each]
-                    self.actors[each]=notestr+" || "+note
+                    self.actors[each]=notestr+" %% "+note
     
     def remove_note(self, actor_id, note):
         for each in self.actors:
             if each == actor_id:
                 notestr = self.actors[each]
-                notelist = notestr.split(" || ")
+                notelist = notestr.split(" %% ")
                 delnote=False
                 i=0
                 for eachnote in notelist:
+                    print(eachnote)
                     if delnote == False and re.search(note, eachnote, re.I) is not None:
                         notelist.pop(i)
                         delnote = True
@@ -140,5 +145,5 @@ class Scene:
                     i=i+1
                 notestr = ""
                 for eachnote in notelist:
-                    notestr = notestr+eachnote + " || "
+                    notestr = notestr+eachnote + " %% "
                 self.actors[each] = notestr[:len(notestr)-4]

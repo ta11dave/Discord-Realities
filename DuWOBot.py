@@ -34,23 +34,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.command()
 async def test(ctx):
         print("scenelist: ", scenelist , "\n*\n")
-        mychar = await database.get_char_data(ctx.author.id)
-        print(mychar.playbook, " playbook")
-        print(mychar.name, " name")
-        print(mychar.level, " level")
-        print(mychar.stats, " stats")
-        print(mychar.mod, " mod")
-        print(mychar.hp, " hp")
-        print(mychar.load, " load")
-        print(mychar.dmgdie, " dmgdie")
-        print(mychar.gear, "gear")
-        print(mychar.notes, " notes")
-        print(mychar.moves, " moves")
-        print(mychar.xp, " xp")
-        print(mychar.picture, " picture")
-        print(mychar.hpmod, " hpmod")
-        print(mychar.hpmax, " hpmax")
-        print(ctx.guild.id)
+        print("guild id: ", ctx.guild.id)
+        await ctx.send(f"Hey <@{ctx.author.id}>, thanks for summoning me.") #this is a ping
 
 @bot.command()
 async def resetlookup(ctx):
@@ -121,10 +106,23 @@ async def roll(ctx, *args):
     await ctx.channel.send(embed=embedVar)
 
 @bot.command()
+async def camp(ctx):
+    datab = database.DBManager
+    mychar = await database.get_char_data(ctx.author.id)
+    await levelup(ctx)
+    if mychar.hp < mychar.hpmax:
+        amt = mychar.hpmax/2
+        if amt + mychar.hp > mychar.hpmax:
+            amt = mychar.hpmax - mychar.hp
+        newhp = await datab.updatechar(ctx.author.id,["hp", amt])
+    await ctx.send(newhp)
+
+@bot.command()
 async def xp(ctx, amt="0"):
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
     embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
+    embedVar.set_thumbnail(url=mychar.picture)
     oldxp = mychar.xp
     if amt == "0":
         embedVar.add_field(name="XP", value="You have "+str(mychar.xp)+" xp.", inline=False)
@@ -134,45 +132,64 @@ async def xp(ctx, amt="0"):
     await ctx.channel.send(embed=embedVar)
 
 @bot.command()
-async def movelist(ctx):
+async def coin(ctx, amt="0"):
+    await ctx.message.delete()
+    datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
-    embedVar = discord.Embed(title="Move List", description="", color=0x00ff00)
-    embedVar.add_field(name="Basic Moves", value="Hack and Slash\nVolley\nDefy Danger\nDefend\nSpout Lore\nDiscern Realities\nParley\nAid or Interfere", inline=False)
-    embedVar.add_field(name="Special Moves", value="Last Breath\nEncumberance\nMake Camp\nTake Watch\nUndertake a Perilous Journey\nEnd of Session\nCarouse\nSupply\nRecover\nRecruit\nOutstanding Warrants\nBolster", inline=False)
-    # might have to stringify the character moves
-    embedVar.add_field(name=f"{mychar.name}'s Moves", value=mychar.moves, inline=False)
+    embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
+    embedVar.set_thumbnail(url=mychar.picture)
+    oldcoin = mychar.coin
+    if amt == "0":
+        embedVar.add_field(name="Coin", value="You have "+str(mychar.coin)+" coin.", inline=False)
+    else:
+        newcoin = await datab.updatechar(ctx.author.id,["coin", amt])
+        embedVar.add_field(name="Coin", value="Ka-Ching! Coin went from "+str(oldcoin)+" to "+str(newcoin)+"!", inline=False)
     await ctx.channel.send(embed=embedVar)
 
 @bot.command()
+async def movelist(ctx):
+    await ctx.message.delete()
+    mychar = await database.get_char_data(ctx.author.id)
+    embedVar = discord.Embed(title="Move List", description="", color=0x00ff00)
+    embedVar.set_thumbnail(url=mychar.picture)
+    embedVar.add_field(name="Basic Moves", value="Hack and Slash\nVolley\nDefy Danger\nDefend\nSpout Lore\nDiscern Realities\nParley\nAid or Interfere", inline=False)
+    embedVar.add_field(name="Special Moves", value="Last Breath\nEncumberance\nMake Camp\nTake Watch\nUndertake a Perilous Journey\nEnd of Session\nCarouse\nSupply\nRecover\nRecruit\nOutstanding Warrants\nBolster", inline=False)
+    embedVar.add_field(name=f"{mychar.name}'s Moves", value=str(mychar.moves).replace("%%", "\n"), inline=False)
+    await ctx.channel.send(embed=embedVar)
+
+@bot.command(aliases = ("up",))
 async def update(ctx, *args):
+    await ctx.message.delete()
     if len(args)<1:
         args = "help"
     datab=database.DBManager
     responcetext = await datab.updatechar(ctx.author.id, args)
     await ctx.send(responcetext)
 
-@bot.group(invoke_without_command = True)
+@bot.group(invoke_without_command = True, aliases = ("c",))
 async def char(ctx):
     await ctx.send("Use `!char new [name]` to make a new character, `!char list` to see all your characters, and `char view` to see your current character.")
     
 @char.command()
 async def new(ctx, *args):
+    await ctx.message.delete()
     charname = ""
     for each in args:
         charname= charname+each+" "
     if charname == "":
-        await ctx.send("Gotta enter a name, choose wisely!")
+        await ctx.send("Gotta enter a name, choose wisely!\n You don't need quotes either, `!char new Billy Bob` works fine")
         return
     charname = charname[:len(charname)-1] #taking the space out
     datab = database.DBManager
     await datab.newchar(ctx.author.id,charname)
     embedVar = discord.Embed(title=f"New Character: {charname}!", description="", color=0x00ff00)
-    embedVar.add_field(name="Your new character Exists!",value="You can update what's on your sheet with `!update`. You can also change to another character you may have with `!char set [name]` \nAlso, don't forget racial features, alignment, and bonds. These things are all good items to put in the notes section of the sheet.", inline=False)
+    embedVar.add_field(name="Your new character Exists!",value="You can update what's on your sheet with `!update`. You can also change to another character you may have with `!char set [name]` \nAlso, don't forget racial features, alignment, and bonds. These things are all good items to put in the notes section of the sheet.\n\nYou can also use `!char make [Playbook]` to speed up the process.", inline=False)
     await ctx.channel.send(embed=embedVar)
+    
 
 @char.command()
-
 async def make(ctx, playbook):
+    await ctx.message.delete()
     datab = database.DBManager
     myplaybook = await datab.playbook_lookup(ctx,playbook)
     mychar = await database.get_char_data(ctx.author.id)
@@ -184,14 +201,16 @@ async def make(ctx, playbook):
         plbkobj= school.Playbook(myplaybook[1],myplaybook[2],myplaybook[3],myplaybook[4],myplaybook[5],myplaybook[6],myplaybook[7],myplaybook[8],myplaybook[9],myplaybook[10],myplaybook[11],myplaybook[12],myplaybook[13],myplaybook[14],myplaybook[15],myplaybook[1])
         # args expects strings
         await datab.updatechar(ctx.author.id, ["playbook", plbkobj.name])
-        await datab.updatechar(ctx.author.id, ["hp", str(int(plbkobj.base_hp) + mychar.stats[2])])
+        await datab.updatechar(ctx.author.id, ["hpmod", plbkobj.base_hp])
+        startinghp = int(plbkobj.base_hp)+int(mychar.stats[2])
+        await datab.updatechar(ctx.author.id, ["hp", str(startinghp)])
         await datab.updatechar(ctx.author.id, ["load", str(mychar.mod[0] + int(plbkobj.load))])
         await datab.updatechar(ctx.author.id, ["dmgdie", "1"+plbkobj.damage])
         starting_moves = plbkobj.starting_moves.replace("\'","\"")
         starting_moves = json.loads(starting_moves)
         for each in starting_moves:
             await datab.updatechar(ctx.author.id, ["move","add", each["name"]])
-        embedVar = discord.Embed(title="Updated! Next Steps", description="Your playbook, hp, load, Damage die, and starting moves have been imported.\nCheck the playbook itself if there's a move you should *not* have, since some have you make a choice between two.\n\nThe rest of this stuff goes in your notes, which you can update with `!update note add [info]`", color=0x00ff00)
+        embedVar = discord.Embed(title=f"{mychar.name} is now a {plbkobj.name}! Next Steps", description="Your playbook, hp, load, Damage die, and starting moves have been imported.\nCheck the playbook itself if there's a move you should *not* have, since some have you make a choice between two.\n\nThe rest of this stuff goes in your notes, which you can update with `!update note add [info]`", color=0x00ff00)
         looksdmp = json.loads(plbkobj.looks.replace("'", "\""))
         try:
             looksstr = ""
@@ -226,17 +245,17 @@ async def make(ctx, playbook):
             embedVar.add_field(name="Example Bonds",value=plbkobj.bonds, inline=False)
         embedVar.add_field(name="Gear",value="Look at the playbook to see what gear is available. You can add it with `!update gear add [item]`. It works like the note module, but know you can use `!lookup item [item] to get names and tags of things.`", inline=False)
         await ctx.channel.send(embed=embedVar)
-        
 
 @char.command()
 async def delete(ctx):
     mychar = await database.get_char_data(ctx.author.id)
     datab = database.DBManager
     myview = school.ButtonView(ctx)
-    await ctx.send(f"Do you want to delete your current active character: {mychar.name}?",view = myview)
-        
+    await ctx.send(f"Do you want to delete your current active character: {mychar.name}?",view = myview, ephemeral=True)
+    
 @char.command()
 async def levelup(ctx):
+    await ctx.message.delete()
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)#get current charname
     if mychar.level >= 10:
@@ -251,6 +270,7 @@ async def levelup(ctx):
 
 @char.command()
 async def set(ctx, charname):
+    await ctx.message.delete()
     datab = database.DBManager
     try:
         mychar = await database.get_char_data(ctx.author.id)#get current charname
@@ -263,10 +283,10 @@ async def set(ctx, charname):
             newcharname = guy[1]
             await datab.set(ctx.author.id, guy[0])
     await ctx.send(f"Switched from {oldcharname} to {newcharname}")
-    await ctx.message.delete()
-
+    
 @char.command()
 async def list(ctx):
+    await ctx.message.delete()
     datab = database.DBManager
     charlist = await datab.charlist(ctx.author.id)
     embedVar = discord.Embed(title="Character List", description="", color=0x00ff00)
@@ -275,29 +295,50 @@ async def list(ctx):
         namelist = namelist+ str(guy[1])+"\n"
     embedVar.add_field(name="Roster:",value=namelist, inline=False)
     await ctx.channel.send(embed=embedVar)
-    await ctx.message.delete()
-
+    
 @char.command()
-async def view(ctx):
+async def view(ctx, *args):
+    await ctx.message.delete()
     datab = database.DBManager
+    if len(args)==0:
+        args=("basic", "stats", "hp", "gear", "move", "note")
+    else:
+        newargs=[]
+        for each in args:
+            newargs.append(str(each).lower())
+        args = newargs
     try:
         mychar = await database.get_char_data(ctx.author.id)
         embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
-        datastr = f"Playbook: {mychar.playbook}\nName: {mychar.name}\nLevel: {mychar.level}\nXP: {mychar.xp}\nDamage Die: {mychar.dmgdie}"
+        embedVar.set_thumbnail(url=mychar.picture)
+    except:
+        await ctx.send("You don't have an active character to view.")
+        return
+    if "basic" in args:
+        playbookstr = str(mychar.playbook)[2:len(mychar.playbook)-2]
+        datastr = f"Playbook: {playbookstr}\nName: {mychar.name}\nLevel: {mychar.level}\nXP: {mychar.xp}\nDamage Die: {mychar.dmgdie}\nCoin: {mychar.coin}"
         embedVar.add_field(name="Basic Info", value=datastr, inline=False)
+    if "stats" in args:
         statstr = f"Strength: {mychar.stats[0]} ({mychar.mod[0]}), Dexterity: {mychar.stats[1]} ({mychar.mod[1]}), Constitution: {mychar.stats[2]} ({mychar.mod[2]}), Wisdom: {mychar.stats[3]} ({mychar.mod[3]}), Intelligence: {mychar.stats[4]} ({mychar.mod[4]}), Charisma: {mychar.stats[5]} ({mychar.mod[5]})"
         embedVar.add_field(name="Stats", value=statstr, inline=False)
+    if "hp" in args:
         embedVar.add_field(name="Health", value=f"{mychar.hp} of {mychar.hpmax} HP", inline=False)
-        embedVar.add_field(name="Inventory", value=mychar.gear+f"\n\nLoad:{mychar.load}", inline=False)
-        mymoves=mychar.moves.replace("||","\n")
+    if "gear" in args or "item" in args or "items" in args:
+        mygear=mychar.gear.replace("%%","\n* ")
+        embedVar.add_field(name="Inventory", value=mygear+f"\n\nLoad:{mychar.load}", inline=False)
+    if "move" in args or "moves" in args:
+        mymoves=mychar.moves.replace("%%","\n* ")
         embedVar.add_field(name="Moves", value=mymoves, inline=False)
-        mynotes=mychar.notes.replace("||","\n")
+    if "note" in args or "notes" in args:
+        mynotes=mychar.notes.replace("%%","\n* ")
         embedVar.add_field(name="Notes", value=mynotes, inline=False)
-        embedVar.set_thumbnail(url=mychar.picture)
-        await ctx.channel.send(embed=embedVar)
+    if "help" in args:
+        ctx.send("Use `!char view` to see your sheet.\n\nYou can also be more specific with: \n`!char view basic`\n`!char view stats`\n`!char view hp`\n`!char view gear`\n`!char view move`\n`!char view notes`")
+    await ctx.channel.send(embed=embedVar)
+    try:
+        await ctx.message.delete()
     except:
-        ctx.send("You don't have an active character to view.")
-    await ctx.message.delete()
+        pass
 
 #### SCENE FUNCTIONS #######
 
@@ -307,6 +348,7 @@ async def scene(ctx):
 
 @scene.command()
 async def new(ctx):
+    await ctx.message.delete()
     for thescene in scenelist: #checking to make sure there isn't a scene already happening in this channel
         if str(thescene.channel) == str(ctx.channel.id):
             return
@@ -317,6 +359,7 @@ async def new(ctx):
 
 @scene.command()
 async def end(ctx):
+    await ctx.message.delete()
     i=0
     for thescene in scenelist:
         if str(thescene.channel) == str(ctx.channel.id):
@@ -329,6 +372,7 @@ async def end(ctx):
 
 @scene.command()
 async def leave(ctx):
+    await ctx.message.delete()
     datab = database.DBManager
     try:  #if no character, stop
         mychar = await database.get_char_data(ctx.author.id)
@@ -345,6 +389,7 @@ async def leave(ctx):
 
 @scene.command()
 async def join(ctx):
+    await ctx.message.delete()
     datab = database.DBManager
     try:  #if no character, stop
         mychar = await database.get_char_data(ctx.author.id)
@@ -356,21 +401,31 @@ async def join(ctx):
             thescene.join(mychar.name)
             message = await ctx.fetch_message(thescene.summary_message_id)
             thescene.update_pinned()
-            await message.edit(content="```\n"+thescene.pinned+"\n```") 
+            await message.edit(content="```\n"+thescene.pinned+"\n```")
+            await ctx.send(f"{mychar.name} has joined the scene!")
     
 @scene.command()
 async def addnpc(ctx, *, npc_name = "NPC"):
+    await ctx.message.delete()
     for thescene in scenelist:
         if str(thescene.channel) == str(ctx.channel.id):
+            if ctx.author.id != thescene.dm_id:
+                ctx.send(f"Hey {ctx.author.id}, you didn't start this scene so you can't add NPCs!")
+                return
             thescene.add_npc(npc_name)
             message = await ctx.fetch_message(thescene.summary_message_id)
             thescene.update_pinned()
             await message.edit(content="```\n"+thescene.pinned+"\n```") 
+            await ctx.send(f"{npc_name} has joined the scene!")
 
 @scene.command()
 async def npcleave(ctx, *, npc_name):
+    await ctx.message.delete()
     for thescene in scenelist:
         if str(thescene.channel) == str(ctx.channel.id):
+             if ctx.author.id != thescene.dm_id:
+                ctx.send(f"Hey {ctx.author.id}, you didn't start this scene so you can't control NPCs!")
+                return
             npcfound = False
             for each in thescene.actors:
                 if npcfound == False and re.search(npc_name, each, re.I) is not None:
@@ -384,6 +439,7 @@ async def npcleave(ctx, *, npc_name):
 
 @scene.command()
 async def info(ctx):
+    await ctx.message.delete()
     for thescene in scenelist:
         if str(thescene.channel) == str(ctx.channel.id):
             await ctx.channel.send("```\n"+thescene.pinned+"\n```")
@@ -394,14 +450,17 @@ async def help(ctx):
 
 @scene.command()
 async def note(ctx, cmd, note):
+    await ctx.message.delete()
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
     for thescene in scenelist:
         if str(thescene.channel) == str(ctx.channel.id):
             if cmd == "add" or cmd == "+":
                 thescene.add_note(mychar.name, note)
+                await ctx.send(f"Added note about {mychar.name}:\n`{note}`")
             elif cmd == "remove" or cmd == "-":
                 thescene.remove_note(mychar.name, note)
+                await ctx.send(f"Removed note about {mychar.name}:\n`{note}`")
             else:
                 pass
             message = await ctx.fetch_message(thescene.summary_message_id)
@@ -411,6 +470,7 @@ async def note(ctx, cmd, note):
 
 @scene.command()
 async def npcnote(ctx, npc, cmd, note):
+    await ctx.message.delete()
     for thescene in scenelist:
         if str(thescene.channel) == str(ctx.channel.id):
             if ctx.author.id != thescene.dm_id:
@@ -423,8 +483,10 @@ async def npcnote(ctx, npc, cmd, note):
                     npcfound = True
             if cmd == "add" or cmd == "+":
                 thescene.add_note(npc, note)
+                await ctx.send(f"Added note about {npc}:\n`{note}`")
             elif cmd == "remove" or cmd == "-":
                 thescene.remove_note(npc, note)
+                await ctx.send(f"Removed note about {npc}:\n`{note}`")
             else:
                 pass
             message = await ctx.fetch_message(thescene.summary_message_id)
@@ -432,12 +494,43 @@ async def npcnote(ctx, npc, cmd, note):
             await message.edit(content="```\n"+thescene.pinned+"\n```")
 
 @bot.group(invoke_without_command = True)
-async def lookup(ctx):
-    await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook")
+async def lookup(ctx, *args):
+    await ctx.message.delete()
+    if len(args) == 0:
+        await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook\nYou can also use `!monster [monster]`, `!playbook [playbook]`, `!item [item]`, and `!move [move]` if that's easier for ya. \nI guess the lookup command is depreciated but idk")    
+    if args[0] == "monster":
+        args = args[1:]
+        searchterm = (" ").join(args)
+        monster(ctx,searchterm)
+    elif args[0] == "item":
+        args = args[1:]
+        searchterm = (" ").join(args)
+        item(ctx,searchterm)
+    elif args[0] == "playbook":
+        args = args[1:]
+        searchterm = (" ").join(args)
+        playbook(ctx,searchterm)
+    elif args[0] == "move" or args[0] == "moves":
+        args = args[1:]
+        searchterm = (" ").join(args)
+        move(ctx,searchterm)
+    else:
+        await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook\nYou can also use `!monster [monster]`, `!playbook [playbook]`, `!item [item]`, and `!move [move]` if that's easier for ya. \nI guess the lookup command is depreciated but idk")
 
-@lookup.command()
-async def monster(ctx, searchterm):
+@bot.command(aliases=("mon",))
+async def monster(ctx, searchterm = "None"):
     datab = database.DBManager
+    if searchterm == "None":
+        namestr = ""
+        listonames = await datab.pull_names(ctx,"monsters")
+        for each in listonames:
+            namestr = namestr + str(each)[2:len(each)-3] + "\n"
+        if len(namestr) > 5000:
+            embedVar = discord.Embed(title="Too many monsters to fit in one embed", description="I have no intention to make this work right now", color=0x00ff00)
+        else:
+            embedVar = discord.Embed(title="List of all monsters", description=namestr, color=0x00ff00)
+        await ctx.send(embed=embedVar)
+        return
     result = await datab.monster_lookup(ctx, searchterm)
     embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
     embedVar.add_field(name="Impulse", value=result[0][3], inline=False)
@@ -468,10 +561,20 @@ async def monster(ctx, searchterm):
     await ctx.author.send(embed=embedVar)
     await ctx.channel.send("Sent you a DM!")
 
-@lookup.command()
-async def item(ctx, searchterm):
+@bot.command(aliases=("gear",))
+async def item(ctx, searchterm = "None"):
     datab = database.DBManager
-    result = await datab.eqmt_lookup(ctx, searchterm)
+    if searchterm == "None":
+        namestr = ""
+        listonames = await datab.pull_names(ctx,"eqmt")
+        for each in listonames:
+            namestr = namestr + str(each)[2:len(each)-3] + "\n"
+        if len(namestr) > 5000:
+            embedVar = discord.Embed(title="Too many moves to fit in one embed", description="I have no intention to make this work right now", color=0x00ff00)
+        else:
+            embedVar = discord.Embed(title="List of all items", description=namestr, color=0x00ff00)
+        await ctx.send(embed=embedVar)
+        returnresult = await datab.eqmt_lookup(ctx, searchterm)
     tagdict = json.loads(result[0][2].replace("'", "\""))
     tagstr = ""
     for each in tagdict:
@@ -479,9 +582,17 @@ async def item(ctx, searchterm):
     embedVar = discord.Embed(title="Item: "+result[0][1], description="Tags: \n"+tagstr, color=0x00ff00)
     await ctx.channel.send(embed=embedVar)
     
-@lookup.command()
-async def playbook(ctx, searchterm):
+@bot.command(aliases = ("pb",))
+async def playbook(ctx, searchterm = "None"):
     datab = database.DBManager
+    if searchterm == "None":
+        namestr = ""
+        listonames = await datab.pull_names(ctx,"playbooks")
+        for each in listonames:
+            namestr = namestr + str(each)[2:len(each)-3] + "\n"
+        embedVar = discord.Embed(title="Available Playbooks", description=namestr, color=0x00ff00)
+        await ctx.send(embed=embedVar)
+        return
     result = await datab.playbook_lookup(ctx, searchterm)
     embedVar1 = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
     embedVar1.add_field(name="Load", value=result[0][3], inline=False)
@@ -500,12 +611,24 @@ async def playbook(ctx, searchterm):
         await ctx.author.send(embed=embedVar)
     await ctx.channel.send("Sent you a DM! (Wouldn't want to clog up chat...)")
 
-@lookup.command()
-async def move(ctx, searchterm):
+@bot.command()
+async def move(ctx, searchterm="None"):
     datab = database.DBManager
+    if searchterm == "None":
+        namestr = ""
+        listonames = await datab.pull_names(ctx,"moves")
+        for each in listonames:
+            namestr = namestr + str(each)[2:len(each)-3] + "\n"
+        if len(namestr) > 5000:
+            embedVar = discord.Embed(title="Too many moves to fit in one embed", description="I have no intention to make this work right now", color=0x00ff00)
+        else:
+            embedVar = discord.Embed(title="List of all moves", description=namestr, color=0x00ff00)
+        await ctx.send(embed=embedVar)
+        return
     result = await datab.move_lookup(ctx, searchterm)
     try:
-        print("this has to exist for the try to work: ", result[0][1])
+        if result[0][1] == 1:
+            pass # this only exists to crash
         embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
     except:
         embedVar = discord.Embed(title="", description=result, color=0x00ff00)
@@ -517,23 +640,25 @@ async def move(ctx, searchterm):
 
 #*********** QOL Commands and homebrew ******************
 
-@bot.command()
+@bot.command(aliases = ("a",))
 async def m(ctx):
+    await ctx.message.delete()
     #get all the moves from the person, and then run lookup on them
     mychar = await database.get_char_data(ctx.author.id)
-    movelist = mychar.moves.split("||")
+    movelist = mychar.moves.split("%%")
     for each in movelist:
         datab = database.DBManager
         result = await datab.move_lookup(ctx, each)
         try:
-            print("this has to exist for the try to work: ", result[0][1])
+            if result[0][1] == 0:
+                pass # this should also trigger the crash
             embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+            embedVar.set_thumbnail(url=mychar.picture)
         except:
             embedVar = discord.Embed(title="Error", description=result, color=0x00ff00)
         await ctx.author.send(embed=embedVar)
-    await ctx.channel.send("Sent you a DM!")
+    await ctx.channel.send("Sent you a DM! (It's a lot of embeds)")
     
-
 @bot.group(invoke_without_command = True)
 async def hbimport(ctx, *args):
     #importing moves, monsters, playbooks, and items
@@ -603,8 +728,7 @@ async def hbimport(ctx, *args):
         except:
             await ctx.send("item help message")
     else:
-        print("General import help message")
-
+        await ctx.send("This needs polish. Go check out the Github page, maybe that'll help? Idk. I just work here.")
 
 @bot.event
 async def on_ready():

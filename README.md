@@ -10,19 +10,19 @@ A discord bot that can be used to play Dungeon World. Includes a character build
 
 ##### General Commands
 
-!roll (modifiers)
+###### !roll (modifiers)
 
 common usage: !roll (mod) (+n) ("comments") (adv or dis)
 
 
 
-!camp
+###### !camp
 
 This command will level you up if you have the XP and will heal you up to half your max HP.
 
 
 
-!xp (value)
+###### !xp (value)
 
 !xp will show how much xp you have.
 
@@ -32,7 +32,7 @@ This command will level you up if you have the XP and will heal you up to half y
 
 
 
-!coin (value)
+###### !coin (value)
 
 !coin will show how much coin you have.
 
@@ -42,13 +42,13 @@ This command will level you up if you have the XP and will heal you up to half y
 
 
 
-!movelist
+###### !movelist
 
 shows a list of all the basic/special moves and your active character's moves
 
 
 
-!update \[component] (command) \[value] or !up \[component] (command) \[value]
+###### !update \[component] (command) \[value] or !up \[component] (command) \[value]
 
 Can be used to update anything on your character sheet. This command has a lot going on.
 
@@ -80,13 +80,13 @@ To use this function, you need to have made a character first. Format should loo
 
 ##### Character Commands
 
-!char
+###### !char
 
 Makes a help message on its own
 
 
 
-!char new \[Name]
+###### !char new \[Name]
 
 Makes a new empty sheet.
 
@@ -96,37 +96,37 @@ Note that Character Name has no quotes, so don't add them unless you want quotes
 
 
 
-!char make \[playbook]
+###### !char make \[playbook]
 
 Playbook is case sensitive (currently). Will pre-fill out a bunch of the character sheet stuff. Reccomended to at least do "!update stats x x x x x x" first.
 
 
 
-!char delete
+###### !char delete
 
-Exactly what it looks like. 
+Exactly what it looks like.
 
 
 
-!char levelup
+###### !char levelup
 
 Cashes in XP for a levelup.
 
 
 
-!char set \[name]
+###### !char set \[name]
 
 changes your active character
 
 
 
-!char list
+###### !char list
 
 Shows your active character
 
 
 
-!char view (args)
+###### !char view (args)
 
 Shows your character sheet. Leave args blank to see the whole thing, or write only the args you want to see.
 
@@ -136,67 +136,67 @@ Args are: basic, stats, hp, gear, moves, notes
 
 ##### Scene Commands
 
-scene(ctx):
+###### scene(ctx):
 
 Starts a Scene by invoking the new command below. The person who starts the scene is considered the DM, and is the only person who can do anything with NPCs in the scene.
 
 
 
-!scene new
+###### !scene new
 
 Starts a scene. Makes a pinned post that tracks characters in the scene and notes. Only one per channel.
 
 
 
-!scene end
+###### !scene end
 
 Ends the scene and unpins the post.
 
 
 
-!scene join
+###### !scene join
 
 Makes your active character join the scene.
 
 
 
-!scene leave
+###### !scene leave
 
 Makes your active character leave the scene.
 
 
 
-!scene addnpc (NPC name)
+###### !scene addnpc (NPC name)
 
 If the name is blank it'll add "NPC"
 
 
 
-!scene npcleave \[npc name]
+###### !scene npcleave \[npc name]
 
 Causes NPCs to leave the scene
 
 
 
-!scene info
+###### !scene info
 
 Prints the pinned post in case you want to see what's on there.
 
 
 
-!scene help
+###### !scene help
 
 Shows a help message.
 
 
 
-!scene note \[add/remove/+/-] \[note]
+###### !scene note \[add/remove/+/-] \[note]
 
 Adds a note about your character to the pinned post
 
 
 
-!scene npcnote \[npc name] \[add/remove/+/-] \[note]
+###### !scene npcnote \[npc name] \[add/remove/+/-] \[note]
 
 Adds a note about an NPC to the pinned post. (DM only!)
 
@@ -206,43 +206,43 @@ Adds a note about an NPC to the pinned post. (DM only!)
 
 ##### Utils
 
-!lookup \[monster/item/playbook/move] (search)
+###### !lookup \[monster/item/playbook/move] (search)
 
 If there's no search item it'll make a list of all available.
 
 
 
-!monster (search) or !mon (search)
+###### !monster (search) or !mon (search)
 
 DMs you the monster OR returns a list of things you might have meant. Run in a DM with the bot to be safe.
 
 
 
-!item (search) or !gear (search)
+###### !item (search) or !gear (search)
 
 Returns the tags for items or a list of things you might have meant.
 
 
 
-!playbook (search)
+###### !playbook (search)
 
 Returns the an embed about a certain playbook or a list of things you might have meant.
 
 
 
-!move (search)
+###### !move (search)
 
 Returns a move or a list of things you might have meant.
 
 
 
-!m
+###### !m
 
 This will send you all of your active character's moves written out in DMs. For this to work, the move must be on your sheet exactly as it's shown in the lookup.
 
 
 
-!hbimport \[args]
+###### !hbimport \[args]
 
 This is complicated but you can import monster/item/playbook/move with this command. All homebrew items will only work on the discord server they are imported on. There are a bunch of issues still with monster and playbook imports due to JSON import issues.
 
@@ -251,6 +251,4 @@ For example:
 !hbimport move \[Move Name] \[description]
 
 !hbimport item \[name] \[tag1] (tag2) (tag3)...
-
-
 

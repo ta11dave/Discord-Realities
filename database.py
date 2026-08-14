@@ -3,6 +3,7 @@ import aiosqlite
 import school
 import tomes
 import re
+import json
 
 
 # https://github.com/omnilib/aiosqlite
@@ -41,10 +42,10 @@ class DBManager:
                 await db.execute(f"UPDATE user_registry SET charid = {char_ident} WHERE userid = {user_id};")
             await db.commit()
             #update char pile
-            await db.execute("CREATE TABLE IF NOT EXISTS char_data (id INTEGER PRIMARY KEY, playbook TEXT, name TEXT, level INTEGER, str INTEGER, dex INTEGER, con INTEGER, int INTEGER, wis INTEGER, cha INTEGER, hp INTEGER, hpmod INTEGER, load INTEGER, dmgdie TEXT, gear TEXT, notes TEXT, moves TEXT, xp INTEGER, picture TEXT, coin INTEGER)")
+            await db.execute("CREATE TABLE IF NOT EXISTS char_data (id INTEGER PRIMARY KEY, playbook TEXT, name TEXT, level INTEGER, str INTEGER, dex INTEGER, con INTEGER, int INTEGER, wis INTEGER, cha INTEGER, hp INTEGER, hpmod INTEGER, load INTEGER, dmgdie TEXT, gear TEXT, notes TEXT, moves TEXT, xp INTEGER, picture TEXT, coin INTEGER, counters TEXT)")
             await db.commit()
             # put in a blank character
-            await db.execute("INSERT INTO char_data (playbook, name, level, str, dex, con, int, wis, cha, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 1, 10, 10, 10, 10, 10, 10, 0, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg", 0))
+            await db.execute("INSERT INTO char_data (playbook, name, level, str, dex, con, int, wis, cha, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin, counters) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 1, 10, 10, 10, 10, 10, 10, 0, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg", 0, "{}"))
             await db.commit()
 
     async def XP_view(user_id):
@@ -172,9 +173,10 @@ class DBManager:
                         results2 = await cursor.fetchall()
             except: 
                 await ctx.send("Can't lookup homebrew in a DM, gotta pull it up in a server.")
-            if results2 == []:
+            try:
+                results2 == None
                 results = results1
-            else:
+            except:
                 results = results2
         elif len(movlist) >1:
             results = "# Multiple Matches\n"
@@ -539,6 +541,39 @@ class DBManager:
                 await db.execute(f"UPDATE char_data SET picture = \"{args[0]}\" WHERE id = {mycharid};")
                 await db.commit()
                 return f"Picture is now {args[0]}"
+            if myargs == "counter": #TEXT
+                async with db.execute("SELECT counters FROM char_data WHERE id = ?", (mycharid,)) as cursor:
+                    ccstring = await cursor.fetchone()
+                storedarray = json.loads(ccstring[0].replace("'", "\""))
+                ccarray=[]
+                if args[0] == "+" or args[0] == "add":
+                    for each in storedarray:
+                        eachcounter = {}
+                        eachcounter["name"] = each["name"]
+                        eachcounter["min"] = each["min"]
+                        eachcounter["max"] = each["max"]
+                        eachcounter["value"] = each["value"]
+                        ccarray.append(eachcounter)
+                    ccarray.append(args[1])
+                    myccs = json.dumps(ccarray).replace("\"", "'")
+                    await db.execute(f"UPDATE char_data SET counters = \"{myccs}\" WHERE id = {mycharid};")
+                    await db.commit()
+                    return f"Created Counter: {args[1]["name"]}"
+                elif args[0] == "-" or args[0] == "remove":
+                    i=0
+                    found = False
+                    for each in storedarray:
+                        if re.search(each["name"], args[1], re.I) is not None and found == False:
+                            found = True
+                            i=i+1
+                    try:
+                        storedarray.pop(i)
+                        myccs = json.dumps(storedarray).replace("\"", "'")
+                        await db.execute(f"UPDATE char_data SET counters = \"{myccs}\" WHERE id = {mycharid};")
+                        await db.commit()
+                        return f"Deleted counter: {storedarray[i]["name"]}"
+                    except:
+                        return f"Couldn't find a counter by the name {args[1]}"
 
 async def active_char_id(user_id):
     db = await aiosqlite.connect(maindb)
@@ -553,7 +588,7 @@ async def get_char_data(user_id):
     async with aiosqlite.connect(maindb) as db:
         async with db.execute("SELECT * FROM char_data WHERE id = ?", (char_id,)) as cursor:
             char_data = await cursor.fetchone()
-    return school.Character(char_data[1], char_data[2], char_data[3], char_data[4], char_data[5], char_data[6], char_data[7], char_data[8], char_data[9], char_data[10], char_data[11], char_data[12], char_data[13], char_data[14], char_data[15], char_data[16], char_data[17], char_data[18], char_data[19])
+    return school.Character(char_data[1], char_data[2], char_data[3], char_data[4], char_data[5], char_data[6], char_data[7], char_data[8], char_data[9], char_data[10], char_data[11], char_data[12], char_data[13], char_data[14], char_data[15], char_data[16], char_data[17], char_data[18], char_data[19], char_data[20])
         
 async def reset(): #Only use if the database file is deleted to build ot back from the raw json file
     datab = DBManager

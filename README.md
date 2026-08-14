@@ -1,10 +1,12 @@
 # Discord-Realities
 
-A discord bot that can be used to play Dungeon World. Includes a character builder, a character manager, and all the reference material.
+A discord bot that can be used to play Dungeon World. Includes a character builder, a character manager, and all the reference material. Huge shoutout to https://www.npmjs.com/package/dungeonworld-data for doing all the data entry for me.
 
 
 
 ### Documentation (kinda)
+
+
 
 
 

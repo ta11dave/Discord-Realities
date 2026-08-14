@@ -61,7 +61,7 @@ class Moves:
         self.key = key
 
 class Character:
-    def __init__(self, playbook, name, level, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin):
+    def __init__(self, playbook, name, level, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin, counters):
         self.playbook = playbook
         self.name = name
         self.level = level
@@ -92,7 +92,9 @@ class Character:
         self.hpmod = hpmod #from playbook
         self.hpmax = self.stats[2]+self.hpmod 
         self.coin = coin
-        
+        self.counters = counters
+      
+
 class Scene:        
     def __init__(self, channel_id, message_id, dm_id):
         self.channel = str(channel_id)  # readonly

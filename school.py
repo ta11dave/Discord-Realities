@@ -3,6 +3,7 @@ import discord
 import database
 from discord.ext import commands
 from discord.ui import view
+import json
 #all the classes, of course
 
 class ButtonView(discord.ui.View):
@@ -60,6 +61,13 @@ class Moves:
         self.description = description
         self.key = key
 
+class Counter:
+    def __init__(self, name, minimum, maximum, value):
+        self.name = name
+        self.minimum = minimum
+        self.maximum = maximum
+        self.value = value
+
 class Character:
     def __init__(self, playbook, name, level, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin, counters):
         self.playbook = playbook
@@ -92,7 +100,10 @@ class Character:
         self.hpmod = hpmod #from playbook
         self.hpmax = self.stats[2]+self.hpmod 
         self.coin = coin
-        self.counters = counters
+        self.cc = []
+        counterarray = json.loads(counters.replace("'", "\""))
+        for each in counterarray:
+            self.cc.append(Counter(each['name'], each['min'], each['max'], each['value']))
       
 
 class Scene:        

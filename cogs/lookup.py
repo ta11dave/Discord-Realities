@@ -8,33 +8,36 @@ import json
 class Look(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        print("lookup init")
 
-    @commands.group(invoke_without_command = True)
+    @commands.command()
     async def lookup(self, ctx, *args):
         await ctx.message.delete()
         if len(args) == 0:
             await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook\nYou can also use `!monster [monster]`, `!playbook [playbook]`, `!item [item]`, and `!move [move]` if that's easier for ya. \nI guess the lookup command is depreciated but idk")    
+        if len(args) == 1:
+            args = [args[0], "None"]
         if args[0] == "monster":
             args = args[1:]
             searchterm = (" ").join(args)
-            monster(ctx,searchterm)
+            await self.monster(ctx,searchterm)
         elif args[0] == "item":
             args = args[1:]
             searchterm = (" ").join(args)
-            item(ctx,searchterm)
+            await self.item(ctx,searchterm)
         elif args[0] == "playbook":
             args = args[1:]
             searchterm = (" ").join(args)
-            playbook(ctx,searchterm)
+            await self.playbook(ctx,searchterm)
         elif args[0] == "move" or args[0] == "moves":
             args = args[1:]
             searchterm = (" ").join(args)
-            move(ctx,searchterm)
+            await self.move(ctx,searchterm)
         else:
             await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook\nYou can also use `!monster [monster]`, `!playbook [playbook]`, `!item [item]`, and `!move [move]` if that's easier for ya. \nI guess the lookup command is depreciated but idk")
 
     @commands.command(aliases=("mon",))
-    async def monster(ctx, searchterm = "None"):
+    async def monster(self, ctx, searchterm = "None"):
         datab = database.DBManager
         if searchterm == "None":
             namestr = ""
@@ -78,7 +81,7 @@ class Look(commands.Cog):
         await ctx.channel.send("Sent you a DM!")
 
     @commands.command(aliases=("gear",))
-    async def item(ctx, searchterm = "None"):
+    async def item(self, ctx, searchterm = "None"):
         datab = database.DBManager
         if searchterm == "None":
             namestr = ""
@@ -99,7 +102,7 @@ class Look(commands.Cog):
         await ctx.channel.send(embed=embedVar)
         
     @commands.command(aliases = ("pb",))
-    async def playbook(ctx, searchterm = "None"):
+    async def playbook(self, ctx, searchterm = "None"):
         datab = database.DBManager
         if searchterm == "None":
             namestr = ""
@@ -128,7 +131,7 @@ class Look(commands.Cog):
         await ctx.channel.send("Sent you a DM! (Wouldn't want to clog up chat...)")
 
     @commands.command()
-    async def move(ctx, searchterm="None"):
+    async def move(self, ctx, searchterm = "None"):
         datab = database.DBManager
         if searchterm == "None":
             namestr = ""

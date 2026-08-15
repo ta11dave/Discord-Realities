@@ -10,6 +10,7 @@ scenelist = [] #all the scenes going on at any one time
 class Scene(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        print("scene init")
 
     #### SCENE FUNCTIONS #######
 
@@ -73,7 +74,7 @@ class Scene(commands.Cog):
                 message = await ctx.fetch_message(thescene.summary_message_id)
                 thescene.update_pinned()
                 await message.edit(content="```\n"+thescene.pinned+"\n```")
-                await ctx.send(f"{mychar.name} has joined the scene!")
+                await ctx.send(f"`{mychar.name} has joined the scene!`")
         
     @scene.command()
     async def addnpc(self, ctx, *, npc_name = "NPC"):
@@ -87,7 +88,7 @@ class Scene(commands.Cog):
                 message = await ctx.fetch_message(thescene.summary_message_id)
                 thescene.update_pinned()
                 await message.edit(content="```\n"+thescene.pinned+"\n```") 
-                await ctx.send(f"{npc_name} has joined the scene!")
+                await ctx.send(f"`{npc_name} has joined the scene!`")
 
     @scene.command()
     async def npcleave(self, ctx, *, npc_name):

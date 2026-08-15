@@ -574,6 +574,14 @@ class DBManager:
                         return f"Deleted counter: {storedarray[i]["name"]}"
                     except:
                         return f"Couldn't find a counter by the name {args[1]}"
+                elif args[0] == "push":
+                    try:
+                        myccs = json.dumps(args[1]).replace("\"", "'")
+                        await db.execute(f"UPDATE char_data SET counters = \"{myccs}\" WHERE id = {mycharid};")
+                        await db.commit()
+                        return "Pushed"
+                    except Exception as e:
+                        print("Something happened: ", e)
 
 async def active_char_id(user_id):
     db = await aiosqlite.connect(maindb)

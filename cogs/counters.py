@@ -8,6 +8,7 @@ import json
 class CounterCMDs(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        print("counters init")
 
     @commands.command()
     async def test(self, ctx):
@@ -15,18 +16,69 @@ class CounterCMDs(commands.Cog):
     
     @commands.group(invoke_without_command = True, aliases = ("cc",))
     async def CustomCounter(self, ctx, *args):
-        if len(args)<1:
-            mychar = await database.get_char_data(ctx.author.id)
-            # !cc [counter] (mod)
-            mycc = json.loads(mychar.counters.replace("'", "\""))
-            embedVar = discord.Embed(title=mychar.name +"'s Custom Counters", description=ctx.author, color=0x00ff00)
-            embedVar.set_thumbnail(url=mychar.picture)
-            for each in mycc:
-                embedVar.add_field(name=each["name"], value=f"Min: {each["min"]}\nMax: {each["max"]}\nValue: {each["value"]}", inline=False)
-            await ctx.channel.send(embed=embedVar)
-        else:
-            ctx.send("I haven't gotten this far!")
-    
+        datab = database.DBManager
+        mychar = await database.get_char_data(ctx.author.id)
+        if len(args)<1: # list all CCs
+            try:
+                embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=ctx.author, color=0x00ff00)
+                embedVar.set_thumbnail(url=mychar.picture)
+                for each in mychar.cc:
+                    embedVar.add_field(name=each.name, value=f"Min: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
+                await ctx.channel.send(embed=embedVar)
+            except Exception as e:
+                await ctx.send(f"You either don't have any counters or ***something went wrong: {e}***.")
+        elif len(args) == 1: #show a specific cc
+            try:
+                for each in mychar.cc:
+                    if re.search(args[0], each.name, re.I) is not None:
+                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=ctx.author, color=0x00ff00)
+                        embedVar.set_thumbnail(url=mychar.picture)
+                        embedVar.add_field(name=each.name, value=f"Min: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
+                        await ctx.channel.send(embed=embedVar)
+                        return
+            except:
+                await ctx.send("Couldn't find a counter you were looking for.")
+        elif len(args) >1: #assume modifying a cc# 
+            try:
+                found = False
+                for each in mychar.cc:
+                    if re.search(args[0], each.name, re.I) is not None and found == False:
+                        found = True
+                        if args[1][0] == '+':
+                            each.value = each.value + int(args[1][1:])
+                            if each.value > each.maximum:
+                                each.value = each.maximum
+                        elif args[1][0] == '-':
+                            each.value = each.value - int(args[1][1:])
+                            if each.value < each.minimum:
+                                each.value = each.minimum
+                        else:
+                            each.value = int(args[1][1:])
+                            if each.value > each.maximum:
+                                each.value = each.maximum
+                            elif each.value < each.minimum:
+                                each.value = each.minimum
+                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description="", color=0x00ff00)
+                        embedVar.set_thumbnail(url=mychar.picture)
+                        embedVar.add_field(name=each.name, value=f"Min: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
+                        await ctx.channel.send(embed=embedVar)
+                #make string and push to db
+                ccarray = []
+                for each in mychar.cc:
+                    eachcounter = {}
+                    eachcounter["name"] = each["name"]
+                    eachcounter["min"] = each["min"]
+                    eachcounter["max"] = each["max"]
+                    eachcounter["value"] = each["value"]
+                    ccarray.append(eachcounter)
+                counterstr = json.dumps(ccarray).replace("\"", "'")
+                responce = await datab.updatechar(ctx.author.id, ["counter", "push", counterstr])
+                if responce != "Pushed":
+                    print(responce)
+            except Exception as e:
+                print("Oh no it failed: ", e)
+                
+
     @CustomCounter.command()
     async def create(self, ctx, *args):
         datab = database.DBManager

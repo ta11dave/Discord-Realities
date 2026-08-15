@@ -8,6 +8,7 @@ import json
 class Char(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        print("char init")
 
     @commands.group(invoke_without_command = True, aliases = ("c",))
     async def char(self, ctx):

@@ -51,34 +51,44 @@ class Look(commands.Cog):
             await ctx.send(embed=embedVar)
             return
         result = await datab.monster_lookup(ctx, searchterm)
-        embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
-        embedVar.add_field(name="Impulse", value=result[0][3], inline=False)
-        embedVar.add_field(name="Armor", value=result[0][4], inline=False)
-        embedVar.add_field(name="HP", value=result[0][5], inline=False)
-        attackstring = result[0][6]
-        attackstring=attackstring[1:-1]
-        attacks=json.loads(attackstring.replace("'", "\""))
-        attackname = attacks['name']
-        attackdmg = attacks['damage']
-        attacktags = ""
-        for tag in attacks['tags']:
-            attacktags = attacktags+"\n"+tag
-        embedVar.add_field(name=attackname, value=f"Damage: {attackdmg}\nAttack Tags: {attacktags}", inline=False)
-        tagoptions = result[0][7].replace("'", "\"")
-        tagoptions = json.loads(tagoptions)
-        tagstr = ""
-        for opt in tagoptions:
-            tagstr = tagstr + opt+"\n"
-        embedVar.add_field(name="Creature Tags", value=tagstr, inline=False)
-        moveoptions = result[0][8].replace("'", "\"")
-        moveoptions = json.loads(moveoptions)
-        movestr = ""
-        for opt in moveoptions:
-            movestr = movestr + opt+"\n"
-        embedVar.add_field(name="Moves", value=movestr, inline=False)
-        await ctx.message.delete()
-        await ctx.author.send(embed=embedVar)
-        await ctx.channel.send("Sent you a DM!")
+        try:
+            if result[0][1] == 1:
+                pass # this only exists to crash
+            embedVar = discord.Embed(title=result[0][1], description=result[0][2], color=0x00ff00)
+            embedVar.add_field(name="Impulse", value=result[0][3], inline=False)
+            embedVar.add_field(name="Armor", value=result[0][4], inline=False)
+            embedVar.add_field(name="HP", value=result[0][5], inline=False)
+            attackstring = result[0][6]
+            attackstring=attackstring[1:-1]
+            attacks=json.loads(attackstring.replace("'", "\""))
+            attackname = attacks['name']
+            attackdmg = attacks['damage']
+            attacktags = ""
+            for tag in attacks['tags']:
+                attacktags = attacktags+"\n"+tag
+            embedVar.add_field(name=attackname, value=f"Damage: {attackdmg}\nAttack Tags: {attacktags}", inline=False)
+            tagoptions = result[0][7].replace("'", "\"")
+            tagoptions = json.loads(tagoptions)
+            tagstr = ""
+            for opt in tagoptions:
+                tagstr = tagstr + opt+"\n"
+            embedVar.add_field(name="Creature Tags", value=tagstr, inline=False)
+            moveoptions = result[0][8].replace("'", "\"")
+            moveoptions = json.loads(moveoptions)
+            movestr = ""
+            for opt in moveoptions:
+                movestr = movestr + opt+"\n"
+            embedVar.add_field(name="Moves", value=movestr, inline=False)
+            await ctx.message.delete()
+            await ctx.author.send(embed=embedVar)
+            await ctx.channel.send("Sent you a DM!")
+        except:
+            embedVar = discord.Embed(title="", description=result, color=0x00ff00)
+            await ctx.channel.send(embed=embedVar)
+        try:
+            await ctx.message.delete()
+        except:
+            pass
 
     @commands.command(aliases=("gear",))
     async def item(self, ctx, searchterm = "None"):
@@ -93,13 +103,23 @@ class Look(commands.Cog):
             else:
                 embedVar = discord.Embed(title="List of all items", description=namestr, color=0x00ff00)
             await ctx.send(embed=embedVar)
-            returnresult = await datab.eqmt_lookup(ctx, searchterm)
-        tagdict = json.loads(result[0][2].replace("'", "\""))
-        tagstr = ""
-        for each in tagdict:
-            tagstr=tagstr+"\n"
-        embedVar = discord.Embed(title="Item: "+result[0][1], description="Tags: \n"+tagstr, color=0x00ff00)
-        await ctx.channel.send(embed=embedVar)
+            result = await datab.eqmt_lookup(ctx, searchterm)
+            return
+        result = await datab.eqmt_lookup(ctx, searchterm)
+        try:
+            tagdict = json.loads(result[0][2].replace("'", "\""))
+            tagstr = ""
+            for each in tagdict:
+                tagstr=tagstr + each+"\n"
+            embedVar = discord.Embed(title="Item: "+result[0][1], description="Tags: \n"+tagstr, color=0x00ff00)
+            await ctx.channel.send(embed=embedVar)
+        except:
+            embedVar = discord.Embed(title="", description=result, color=0x00ff00)
+            await ctx.channel.send(embed=embedVar)
+        try:
+            await ctx.message.delete()
+        except:
+            pass
         
     @commands.command(aliases = ("pb",))
     async def playbook(self, ctx, searchterm = "None"):

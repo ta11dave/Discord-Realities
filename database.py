@@ -14,7 +14,7 @@ import json
 
 maindb = "my_database.db" # put the filename in one place
 
-class DBManager:
+class DBManager:   
     
     async def newchar(user_id, charname):
         async with aiosqlite.connect(maindb) as db:
@@ -138,7 +138,7 @@ class DBManager:
         try:
             hbdb = str(ctx.guild.id)+".db"
         except:
-            pass
+            await ctx.send("FYI Homebrew is locked to a server.")
         movnames = []
         movlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -164,20 +164,17 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM moves WHERE name = ?", (movlist[0],)) as cursor:
-                        results1 = await cursor.fetchall()
+                        results = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM moves WHERE name = ?", (movlist[0],)) as cursor:
-                        results2 = await cursor.fetchall()
+                        hbresults = await cursor.fetchall()
+                        if hbresults[0] != None:
+                            results = hbresults
             except: 
-                await ctx.send("Can't lookup homebrew in a DM, gotta pull it up in a server.")
-            try:
-                results2 == None
-                results = results1
-            except:
-                results = results2
+                pass
         elif len(movlist) >1:
             results = "# Multiple Matches\n"
             for each in movlist:
@@ -187,7 +184,10 @@ class DBManager:
         return results
 
     async def playbook_lookup(ctx, search):
-        hbdb = str(ctx.guild.id)+".db"
+        try:
+            hbdb = str(ctx.guild.id)+".db"
+        except:
+            await ctx.send("FYI Homebrew is locked to a server.")
         playnames = []
         playlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -213,20 +213,17 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM playbooks WHERE name = ?", (playlist[0],)) as cursor:
-                        results1 = await cursor.fetchall()
+                        results = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM playbooks WHERE name = ?", (playlist[0],)) as cursor:
-                        results2 = await cursor.fetchall()
+                        hbresults = await cursor.fetchall()
+                        if hbresults[0] != None:
+                            results = hbresults
             except: 
                 pass
-            try:
-                results2 == None
-                results = results1
-            except:
-                results = results2
         elif len(playlist) >1:
             results = "# Multiple Matches\n"
             for each in playlist:
@@ -236,7 +233,10 @@ class DBManager:
         return results
 
     async def monster_lookup(ctx, search):
-        hbdb = str(ctx.guild.id)+".db"
+        try:
+            hbdb = str(ctx.guild.id)+".db"
+        except:
+            await ctx.send("FYI Homebrew is locked to a server.")
         monnames = []
         monlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -262,20 +262,17 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM monsters WHERE name = ?", (monlist[0],)) as cursor:
-                        results1 = await cursor.fetchall()
+                        results = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM monsters WHERE name = ?", (monlist[0],)) as cursor:
-                        results2 = await cursor.fetchall()
+                        hbresults = await cursor.fetchall()
+                        if hbresults[0] != None:
+                            results = hbresults
             except: 
                 pass
-            try:
-                results2 == None
-                results = results1
-            except:
-                results = results2
         elif len(monlist) >1:
             results = "# Multiple Matches\n"
             for each in monlist:
@@ -285,7 +282,10 @@ class DBManager:
         return results
 
     async def eqmt_lookup(ctx, search):
-        hbdb = str(ctx.guild.id)+".db"
+        try:
+            hbdb = str(ctx.guild.id)+".db"
+        except:
+            await ctx.send("FYI Homebrew is locked to a server.")
         itemnames = []
         itemlist = []
         async with aiosqlite.connect(maindb) as db:
@@ -311,20 +311,17 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM eqmt WHERE name = ?", (itemlist[0],)) as cursor:
-                        results1 = await cursor.fetchall()
+                        results = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM eqmt WHERE name = ?", (itemlist[0],)) as cursor:
-                        results2 = await cursor.fetchall()
+                        hbresults = await cursor.fetchall()
+                        if hbresults[0] != None:
+                            results = hbresults
             except: 
                 pass
-            try:
-                results2 == None
-                results = results1
-            except:
-                results = results2
         elif len(itemlist) >1:
             results = "# Multiple Matches\n"
             for each in itemlist:

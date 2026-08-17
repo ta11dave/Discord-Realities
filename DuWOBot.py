@@ -96,7 +96,6 @@ async def roll(ctx, *args):
             embedVar.add_field(name="Result", value="Full Success!", inline=False)
         else:
             embedVar.add_field(name="Result", value="Something broke", inline=False)
-    else:
     
     await ctx.channel.send(embed=embedVar)
 
@@ -124,7 +123,7 @@ async def xp(ctx, amt="0"):
     else:
         newxp = await datab.updatechar(ctx.author.id,["xp", amt])
         embedVar.add_field(name="XP", value="Your XP went from "+str(oldxp)+" to "+str(newxp)+"!", inline=False)
-    await ctx.channel.send(embed=embedVar)
+        await ctx.channel.send(embed=embedVar)
 
 @bot.command()
 async def coin(ctx, amt="0"):

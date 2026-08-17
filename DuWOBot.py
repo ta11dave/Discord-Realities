@@ -53,7 +53,7 @@ async def roll(ctx, *args):
         stat = args[0][:3].lower()
         args = args[1:]
         if stat == "hel":
-            await ctx.send("Use `!roll` to roll dice! The standard format should look something like `!roll dex +1 \"Discern Realities\" adv`")
+            await ctx.send("Use `!roll` to roll dice! The standard format should look something like `!roll dex +1 \"Discern Realities\" adv`.\nIf you're rolling damage, use `!roll damage`")
             return
         elif stat == "str":
             rollstr = rollstr + "+"+ str(mychar.mod[0]) + " [str] "
@@ -96,6 +96,7 @@ async def roll(ctx, *args):
             embedVar.add_field(name="Result", value="Full Success!", inline=False)
         else:
             embedVar.add_field(name="Result", value="Something broke", inline=False)
+    else:
     
     await ctx.channel.send(embed=embedVar)
 

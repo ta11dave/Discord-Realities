@@ -183,7 +183,7 @@ class DBManager:
             for each in movlist:
                 results = results + "* "+str(each) + "\n"
         else:
-            results = "Yeah idk man"
+            results = "No Moves found =("
         return results
 
     async def playbook_lookup(ctx, search):
@@ -213,21 +213,26 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM playbooks WHERE name = ?", (playlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results1 = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM playbooks WHERE name = ?", (playlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results2 = await cursor.fetchall()
             except: 
                 pass
+            try:
+                results2 == None
+                results = results1
+            except:
+                results = results2
         elif len(playlist) >1:
             results = "# Multiple Matches\n"
             for each in playlist:
                 results = results + "* "+str(each) + "\n"
         else:
-            results = "Yeah idk man"
+            results = "No Playbooks found =("
         return results
 
     async def monster_lookup(ctx, search):
@@ -257,21 +262,26 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM monsters WHERE name = ?", (monlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results1 = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM monsters WHERE name = ?", (monlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results2 = await cursor.fetchall()
             except: 
                 pass
+            try:
+                results2 == None
+                results = results1
+            except:
+                results = results2
         elif len(monlist) >1:
             results = "# Multiple Matches\n"
             for each in monlist:
                 results = results + "* "+str(each) + "\n"
         else:
-            results = "Yeah idk man"
+            results = "No Monsters found =("
         return results
 
     async def eqmt_lookup(ctx, search):
@@ -301,21 +311,26 @@ class DBManager:
             try:
                 async with aiosqlite.connect(maindb) as db:
                     async with db.execute("SELECT * FROM eqmt WHERE name = ?", (itemlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results1 = await cursor.fetchall()
             except: 
                 pass
             try:
                 async with aiosqlite.connect(hbdb) as db:
                     async with db.execute("SELECT * FROM eqmt WHERE name = ?", (itemlist[0],)) as cursor:
-                        results = await cursor.fetchall()
+                        results2 = await cursor.fetchall()
             except: 
                 pass
+            try:
+                results2 == None
+                results = results1
+            except:
+                results = results2
         elif len(itemlist) >1:
             results = "# Multiple Matches\n"
             for each in itemlist:
                 results = results + "* "+str(each) + "\n"
         else:
-            results = "No Moves found =("
+            results = "No Items found =("
         return results
     
     async def updatechar(user_id, args):
@@ -614,4 +629,4 @@ async def reset(): #Only use if the database file is deleted to build ot back fr
     for each in eqmt:
         await datab.add_eqmt(each, maindb)
 
-
+    

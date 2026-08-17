@@ -11,7 +11,7 @@ eqmt = []
 mvs = []
 
 async def main():
-    with open("game_data_basic.json", "r", encoding="utf-8") as f:
+    with open("game_data_basic_formatted.json", "r", encoding="utf-8") as f:
         data = json.load(f)
 
 

@@ -565,6 +565,7 @@ class DBManager:
                         eachcounter["min"] = each["min"]
                         eachcounter["max"] = each["max"]
                         eachcounter["value"] = each["value"]
+                        eachcounter["desc"] = each["desc"]
                         ccarray.append(eachcounter)
                     ccarray.append(args[1])
                     myccs = json.dumps(ccarray).replace("\"", "'")

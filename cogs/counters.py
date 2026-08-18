@@ -33,7 +33,7 @@ class CounterCMDs(commands.Cog):
                     if re.search(args[0], each.name, re.I) is not None:
                         embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=ctx.author, color=0x00ff00)
                         embedVar.set_thumbnail(url=mychar.picture)
-                        embedVar.add_field(name=each.name, value=f"Min: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
+                        embedVar.add_field(name=each.name, value=f"Description: {each.desc}\nMin: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
                         await ctx.channel.send(embed=embedVar)
                         return
             except:
@@ -92,6 +92,7 @@ class CounterCMDs(commands.Cog):
         ccmin = 0
         ccmax = 1
         ccval = ccmax
+        ccdesc = f"Counter for {ccname}"
         try:
             while len(arglist) >= 1:
                 if arglist[0] == "-name":
@@ -104,7 +105,10 @@ class CounterCMDs(commands.Cog):
                     ccmax = int(arglist[1])
                     arglist = arglist[2:]
                 if arglist[0] == "-value":
-                    ccvalue = int(arglist[1])
+                    ccval = int(arglist[1])
+                    arglist = arglist[2:]
+                if arglist[0] == "-desc":
+                    ccdesc = int(arglist[1])
                     arglist = arglist[2:]
         except:
             pass
@@ -112,9 +116,10 @@ class CounterCMDs(commands.Cog):
         mycounter["name"] = ccname
         mycounter["min"] = ccmin
         mycounter["max"] = ccmax
-        mycounter["value"] = ccvalue        
-        
-        await ctx.send(datab.updatechar(ctx.author.id, ["counter", "+", mycounter]))
+        mycounter["value"] = ccval        
+        mycounter["desc"] = ccdesc
+        result = await datab.updatechar(ctx.author.id, ["counter", "+", mycounter])
+        await ctx.send(result)
     
     @CustomCounter.command()
     async def delete(self, ctx, ccname):

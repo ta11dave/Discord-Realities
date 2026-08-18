@@ -67,6 +67,7 @@ class Counter:
         self.minimum = minimum
         self.maximum = maximum
         self.value = value
+        self.desc = desc
 
 class Character:
     def __init__(self, playbook, name, level, strength, dexterity, constitution, inteligence, wisdom, charisma, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin, counters):
@@ -103,7 +104,7 @@ class Character:
         self.cc = []
         counterarray = json.loads(counters.replace("'", "\""))
         for each in counterarray:
-            self.cc.append(Counter(each['name'], each['min'], each['max'], each['value']))
+            self.cc.append(Counter(each['name'], each['min'], each['max'], each['value'], each['desc']))
       
 
 class Scene:        

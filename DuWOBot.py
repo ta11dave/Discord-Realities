@@ -9,6 +9,7 @@ import database
 import d20 
 import school
 import json
+import cogs.char
 
 #secure token stuff
 load_dotenv()
@@ -103,12 +104,20 @@ async def roll(ctx, *args):
 async def camp(ctx):
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
-    await levelup(ctx)
+    if mychar.level >= 10:
+        await ctx.send("Level 10 is as high as it goes!")
+        return
+    if mychar.xp >= mychar.level+7:
+        await datab.updatechar(ctx.author.id,["level", mychar.level+1])
+        await datab.updatechar(ctx.author.id,["xp", str(mychar.xp-7)])
+        await ctx.send(f"Leveled up {mychar.name} to {mychar.level+1}! Increase a stat by one and add a new move!")
+    else:
+        await ctx.send(f"You have {mychar.xp} XP and need {mychar.level+7} XP to level up!")
     if mychar.hp < mychar.hpmax:
         amt = mychar.hpmax/2
         if amt + mychar.hp > mychar.hpmax:
             amt = mychar.hpmax - mychar.hp
-        newhp = await datab.updatechar(ctx.author.id,["hp", amt])
+        newhp = await datab.updatechar(ctx.author.id,["hp", "+"+str(int(amt))])
     await ctx.send(newhp)
 
 @bot.command()

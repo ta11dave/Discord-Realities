@@ -41,8 +41,6 @@ async def roll(ctx, *args):
     await ctx.message.delete()
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
-    embedVar = discord.Embed(title=mychar.name +" makes a move!", description=ctx.author, color=0x00ff00)
-    embedVar.set_thumbnail(url=mychar.picture)
     rollstr = "2d6"
     myargs = []
     i=0
@@ -50,6 +48,19 @@ async def roll(ctx, *args):
         args=["flat"]
     if args[0][:3].lower() == "dmg" or args[0].lower() == "damage":
         rollstr = mychar.dmgdie
+    if args[0].lower() == "ouch":
+        embedVar = discord.Embed(title=mychar.name +" takes damage!", description=ctx.author, color=0x00ff00)
+        embedVar.set_thumbnail(url=mychar.picture)
+        theroll = d20.roll(args[1])
+        embedVar.add_field(name="", value=theroll, inline=False)
+        if mychar.hp-theroll.total<=0:
+            embedVar.add_field(name="You are at 0 HP!", value="", inline=False)
+            await datab.updatechar(ctx.author.id,["hp", "0"])
+        else:
+            embedVar.add_field(name="Current HP", value=str(mychar.hp-theroll.total)+"/"+str(mychar.hpmax), inline=False)
+            await datab.updatechar(ctx.author.id,["hp", "-"+str(int(theroll.total))])
+        await ctx.channel.send(embed=embedVar)
+        return
     if args[0][:3].lower() in ["str","dex","con","wis","int","cha"]:
         stat = args[0][:3].lower()
         args = args[1:]
@@ -86,6 +97,8 @@ async def roll(ctx, *args):
     
     theroll = d20.roll(rollstr)
     embedVar.add_field(name="", value=theroll, inline=False)
+    
+    
     
     if "damage" not in rollstr:
         if int(theroll.total)<= 6:

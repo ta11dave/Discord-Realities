@@ -9015,7 +9015,7 @@
   },
   "make_camp": {
     "name": "Make Camp",
-    "description": "Make the camp.",
+    "description": "When you settle in to rest consume a ration. If you’re somewhere dangerous decide the watch order as well. If you have enough XP you may level up. When you wake from at least a few uninterrupted hours of sleep heal damage equal to half your max HP.",
     "key": "make_camp"
   },
   "multiclass_master": {
@@ -9035,17 +9035,39 @@
   },
   "take_watch": {
     "name": "Take Watch",
-    "description": "Watch the camp.",
+    "description": "When you’re on watch and something approaches the camp roll+Wis.\n- On a 10+, you’re able to wake the camp and prepare a response, everyone in the camp takes +1 forward.\n- On a 7–9, you react just a moment too late; your companions in camp are awake but haven’t had time to prepare. They have weapons and armor but little else.\n- On a miss, whatever lurks outside the campfire’s light has the drop on you.",
     "key": "take_watch"
   },
   "undertake_a_perilous_journey": {
     "name": "Undertake a Perilous Journey",
-    "description": "Undertake the journey.",
+    "description": "**When you travel through hostile territory**, choose one member of the party to act as trailblazer, one to scout ahead, and one to be quartermaster. Each character with a job to do rolls+Wis.\nOn a 10+:the quartermaster reduces the number of rations required by one the trailblazer reduces the amount of time it takes to reach your destination (the GM will say by how much) the scout will spot any trouble quick enough to let you get the drop on it\nOn a 7–9, each role performs their job as expected: the normal number of rations are consumed, the journey takes about as long as expected, no one gets the drop on you but you don’t get the drop on them either. You can’t assign more than one job to a character. If you don’t have enough party members, or choose not to assign a job, treat that job as if it had been assigned and the responsible player had rolled a 6.",
     "key": "undertake_a_perilous_journey"
   },
   "volley": {
     "name": "Volley",
     "description": "When you take aim and **shoot at an enemy at range**, roll+Dex. On a 10+ you have a clear shot—deal your damage. On a 7–9, choose one (whichever you choose you deal your damage):\n\n * You have to move to get the shot placing you in danger of the GM’s choice\n * You have to take what you can get: -1d6 damage\n * You have to take several shots, reducing your ammo by one.",
     "key": "volley"
+  },
+  "end_of_session": {
+    "name": "End of Session",
+    "description": "When you reach the end of a session, choose one of your bonds that you feel is resolved (completely explored, no longer relevant, or otherwise). Ask the player of the character you have the bond with if they agree. If they do, mark XP and write a new bond with whomever you wish.\nOnce bonds have been updated look at your alignment . If you fulfilled that alignment at least once this session, mark XP. Then answer these three questions as a group:\n- Did we learn something new and important about the world?\n- Did we overcome a notable monster or enemy?\n- Did we loot a memorable treasure? \nFor each “yes” answer everyone marks XP. Level Up When you have downtime (hours or days) and XP equal to (or greater than) your current level+7, you can reflect on your experiences and hone your skills.\nSubtract your current level+7 from your XP. Increase your level by 1. Choose a new advanced move from your class. If you are the wizard, you also get to add a new spell to your spellbook. Choose one of your stats and increase it by 1 (this may change your modifier). Changing your Constitution increases your maximum and current HP. Ability scores can’t go higher than 18.",
+    "key": "end_of_session"
+  },
+  "carouse": {
+    "name": "Carouse",
+    "description": "When you return triumphant and throw a big party, spend 100 coins and roll +1 for every extra 100 coins spent.\n- On a 10+, choose 3.\n- On a 7–9, choose 1.\n- On a miss, you still choose one, but things get really out of hand (the GM will say how).\n  - You befriend a useful NPC.\n  - You hear rumors of an opportunity.\n  - You gain useful information.\n  - You are not entangled, ensorcelled, or tricked.",
+    "key": "carouse"
+  },
+  "recruit": {
+    "name": "Recruit",
+    "description": "When you put out word that you’re looking to hire help, roll:\n- +1 if you make it known that your pay is generous\n
+- +1 if you make it known what you’re setting out to do\n- +1 if you make it known that they’ll get a share of whatever you find\n
+- +1 if you have a useful reputation around these parts\n  - On a 10+, you’ve got your pick of a number of skilled applicants, your choice who you hire, no penalty for not taking them along.\n  - On a 7–9, you’ll have to settle for someone close to what you want or turn them away.\n  - On a miss someone influential and ill-suited declares they’d like to come along (a foolhardy youth, a loose-cannon, or a veiled enemy, for example), bring them and take the consequences or turn them away. If you turn away applicants you take -1 forward to recruit.",
+    "key": "recruit"
+  }
+  "outstanding_warrants": {
+    "name": "Outstanding Warrants",
+    "description": "When you return to a civilized place in which you’ve caused trouble before, roll+Cha.\n- On a 10+, word has spread of your deeds and everyone recognizes you\n- On a 7–9, as above, and the GM chooses a complication:\n  - The local constabulary has a warrant out for your arrest.\n  - Someone has put a price on your head.\n  - Someone important to you has been put in a bad spot as a result of your actions.",
+    "key": "outstanding_warrants"
   }
 }

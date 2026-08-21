@@ -5,3 +5,4 @@ __pycache__/school.cpython-313.pyc
 __pycache__/database.cpython-313.pyc
 *.db
 *.pyc
+/Game data not used

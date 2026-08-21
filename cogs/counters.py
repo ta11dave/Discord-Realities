@@ -20,7 +20,7 @@ class CounterCMDs(commands.Cog):
         mychar = await database.get_char_data(ctx.author.id)
         if len(args)<1: # list all CCs
             try:
-                embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=ctx.author, color=0x00ff00)
+                embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=f"<@{ctx.author}>", color=0x00ff00)
                 embedVar.set_thumbnail(url=mychar.picture)
                 for each in mychar.cc:
                     embedVar.add_field(name=each.name, value=f"Min: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
@@ -31,7 +31,7 @@ class CounterCMDs(commands.Cog):
             try:
                 for each in mychar.cc:
                     if re.search(args[0], each.name, re.I) is not None:
-                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=ctx.author, color=0x00ff00)
+                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=f"<@{ctx.author}>", color=0x00ff00)
                         embedVar.set_thumbnail(url=mychar.picture)
                         embedVar.add_field(name=each.name, value=f"Description: {each.desc}\nMin: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
                         await ctx.channel.send(embed=embedVar)

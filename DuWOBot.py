@@ -49,7 +49,7 @@ async def roll(ctx, *args):
     if args[0][:3].lower() == "dmg" or args[0].lower() == "damage":
         rollstr = mychar.dmgdie
     if args[0].lower() == "ouch":
-        embedVar = discord.Embed(title=mychar.name +" takes damage!", description=ctx.author, color=0x00ff00)
+        embedVar = discord.Embed(title=mychar.name +" takes damage!", description=f"<@{ctx.author}>", color=0x00ff00)
         embedVar.set_thumbnail(url=mychar.picture)
         theroll = d20.roll(args[1])
         embedVar.add_field(name="", value=theroll, inline=False)

@@ -120,6 +120,36 @@ class DBManager:
             pass
         return results
     
+    async def hbview(ctx):
+        try:
+            hbdb = str(ctx.guild.id)+".db"
+        except:
+            return "Only works on servers."
+        results = []
+        for each in ["playbooks", "moves", "eqmt", "monsters"]:
+            tableresults = []
+            tableresults.append(each)
+            try:
+                async with aiosqlite.connect(hbdb) as db:
+                    async with db.execute(f"SELECT name FROM {each}") as cursor:
+                        async for row in cursor:
+                            tableresults.append(row[0])
+            except:
+                pass
+            results.append("\n".join(tableresults))
+        return results
+    
+    async def hbdelete(ctx, table, name):
+        try:
+            hbdb = str(ctx.guild.id)+".db"
+        except:
+            return "Only works on servers."
+        async with aiosqlite.connect(hbdb) as db:
+            await db.execute(f"DELETE FROM {table} WHERE name = {name}")
+            await db.commit()
+            return f"Deleted {name} from {table}"
+            
+    
     async def add_move(moveclass, database_name):
         async with aiosqlite.connect(database_name) as db:
             await db.execute("CREATE TABLE IF NOT EXISTS moves(id INTEGER PRIMARY KEY, name TEXT, description TEXT, key TEXT)")
@@ -365,7 +395,7 @@ class DBManager:
                     await db.execute(f"UPDATE char_data SET int = \"{statargs[4]}\" WHERE id = {mycharid};")
                     await db.execute(f"UPDATE char_data SET cha = \"{statargs[5]}\" WHERE id = {mycharid};")
                     await db.commit()
-                return f"stats are now Strength: {statargs[0]}, Dexterity: {statargs[1]}, Constitution: {statargs[2]}, Wisdom: {statargs[3]}, Intelligence: {statargs[4]}, Charisma: {statargs[5]}"
+                return f"stats are now Strength: {statargs[0]}, Dexterity: {statargs[1]}, Constitution: {statargs[2]}, Intelligence: {statargs[3]}, Wisdom: {statargs[4]}, Charisma: {statargs[5]}"
             if myargs == "hp": #INTEGER
                 async with db.execute("SELECT hp FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myhp = await cursor.fetchone()

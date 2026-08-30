@@ -471,11 +471,13 @@ class DBManager:
                     i = 0
                     removedgear = ""
                     for each in args[1:]:
+                        i = 0
                         for gear in geararray:
                             if re.search(each, gear, re.I) is not None:
-                                removedgear = removedgear + "%%" + gear
+                                removedgear = removedgear + ", " + gear
                                 geararray.pop(i)
-                    i=i+1
+                            else:
+                                i=i+1
                     mygear = ",".join(geararray)
                     await db.execute(f"UPDATE char_data SET gear = \"{mygear}\" WHERE id = {mycharid};")
                     await db.commit()
@@ -498,16 +500,17 @@ class DBManager:
                     return f"Added the following note: {args[1:]}"
                 elif args[0] == "-" or args[0] == "remove":
                     notearray = mynote.split("%%")
-                    i = 0
                     removednote = ""
                     for each in args[1:]:
+                        i = 0
                         for note in notearray:
                             if re.search(each, note, re.I) is not None:
                                 removednote = removednote + ", " + note
                                 notearray.pop(i)
-                    i=i+1
+                            else:
+                                i=i+1
                     mynote = "%%".join(notearray)
-                    await db.execute(f"UPDATE char_data SET note = \"{mynote}\" WHERE id = {mycharid};")
+                    await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Removed note: {removednote}"
             if myargs == "moves" or myargs == "move": #TEXT
@@ -525,20 +528,19 @@ class DBManager:
                             mymoves = mymoves+"%%"+str(each)
                     await db.execute(f"UPDATE char_data SET moves = \"{mymoves}\" WHERE id = {mycharid};")
                     await db.commit()
-                    return f"Added the following move: {args[1:]}"
+                    return f"Added the following move: {args[1:][0]}"
                 elif args[0] == "-" or args[0] == "remove":
                     movearray = mymoves.split("%%")
-                    i = 0
                     removedmove = ""
                     for each in args[1:]:
+                        i = 0
                         for move in movearray:
                             if re.search(each, move, re.I) is not None:
                                 removedmove = removedmove + ", " + move
                                 movearray.pop(i)
-                    i=i+1
+                            else:
+                                i=i+1
                     mymove = "%%".join(movearray)
-                
-
                 await db.execute(f"UPDATE char_data SET moves = \"{mymove}\" WHERE id = {mycharid};")
                 await db.commit()
                 return f"Removed note: {removedmove}"
@@ -586,7 +588,7 @@ class DBManager:
             if myargs == "counter": #TEXT
                 async with db.execute("SELECT counters FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     ccstring = await cursor.fetchone()
-                storedarray = json.loads(ccstring[0].replace("'", "\""))
+                storedarray = json.loads(ccstring[0].replace("'", "\""), strict=False)
                 ccarray=[]
                 if args[0] == "+" or args[0] == "add":
                     for each in storedarray:
@@ -606,17 +608,21 @@ class DBManager:
                     i=0
                     found = False
                     for each in storedarray:
-                        if re.search(each["name"], args[1], re.I) is not None and found == False:
+                        if re.search(args[1], each["name"], re.I) is not None and found == False:
                             found = True
+                        else:
                             i=i+1
                     try:
-                        storedarray.pop(i)
-                        myccs = json.dumps(storedarray).replace("\"", "'")
+                        if len(storedarray)>0:
+                            storedarray.pop(i)
+                            myccs = json.dumps(storedarray).replace("\"", "'")
+                        else:
+                            myccs = "{}"
                         await db.execute(f"UPDATE char_data SET counters = \"{myccs}\" WHERE id = {mycharid};")
                         await db.commit()
-                        return f"Deleted counter: {storedarray[i]["name"]}"
-                    except:
-                        return f"Couldn't find a counter by the name {args[1]}"
+                        return f"Deleted counter: {args[1]}"
+                    except Exception as e:
+                        return f"Couldn't find a counter by the name {args[1]} OR exception: {e}"
                 elif args[0] == "push":
                     try:
                         myccs = json.dumps(args[1]).replace("\"", "'")

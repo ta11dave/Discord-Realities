@@ -10,6 +10,9 @@ import d20
 import school
 import json
 import cogs.char
+import logging
+
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
 #secure token stuff
 load_dotenv()
@@ -38,80 +41,73 @@ async def resetlookup(ctx):
 
 @bot.command()
 async def roll(ctx, *args):
-    await ctx.message.delete()
-    datab = database.DBManager
-    mychar = await database.get_char_data(ctx.author.id)
-    rollstr = "2d6"
-    myargs = []
-    i=0
-    if args==():
-        args=["flat"]
-    if args[0][:3].lower() == "dmg" or args[0].lower() == "damage":
-        rollstr = mychar.dmgdie
-    if args[0].lower() == "ouch":
-        embedVar = discord.Embed(title=mychar.name +" takes damage!", description=f"<@{ctx.author}>", color=0x00ff00)
+    try:
+        #await ctx.message.delete()
+        datab = database.DBManager
+        mychar = await database.get_char_data(ctx.author.id)
+        myargs = []
+        if args==():
+            myargs=["2d6"]
+        else:
+            rollstr = ""
+            if args[0].lower() == "ouch":
+                embedVar = discord.Embed(title=mychar.name +" takes damage!", description=f"<@{ctx.author.id}>", color=0x00ff00)
+                embedVar.set_thumbnail(url=mychar.picture)
+                theroll = d20.roll(args[1])
+                embedVar.add_field(name="", value=theroll, inline=False)
+                if mychar.hp-theroll.total<=0:
+                    embedVar.add_field(name="You are at 0 HP!", value="", inline=False)
+                    await datab.updatechar(ctx.author.id,["hp", "0"])
+                else:
+                    embedVar.add_field(name="Current HP", value=str(mychar.hp-theroll.total)+"/"+str(mychar.hpmax), inline=False)
+                    await datab.updatechar(ctx.author.id,["hp", "-"+str(int(theroll.total))])
+                await ctx.channel.send(embed=embedVar)
+                return
+            
+            embedVar = discord.Embed(title=mychar.name +" rolls!", description=f"<@{ctx.author.id}>", color=0x00ff00)
+            embedVar.set_thumbnail(url=mychar.picture)
+            i=0
+            for arg in args:
+                if arg in ["dmg", "damage"]:
+                    myargs.append(mychar.dmgdie + "[damage]")
+                elif arg.lower() == "str":
+                    myargs.append("2d6+"+ str(mychar.mod[0]) + " [str] ")
+                elif arg.lower() == "dex":
+                    myargs.append("2d6+"+ str(mychar.mod[1]) + " [dex] ")
+                elif arg.lower() == "con":
+                    myargs.append("2d6+"+ str(mychar.mod[2]) + " [con] ")
+                elif arg.lower() == "int":
+                    myargs.append("2d6+"+ str(mychar.mod[3]) + " [int] ")
+                elif arg.lower() == "wis":
+                    myargs.append("2d6+"+ str(mychar.mod[4]) + " [wis] ")
+                elif arg.lower() == "cha":
+                    myargs.append("2d6+"+ str(mychar.mod[5]) + " [cha] ")
+                elif arg[:1]=="+" or arg[:1]=="-" or arg[0] == int(arg[0]):
+                    myargs.append(str(arg))
+                else:
+                    myargs.append(" ["+arg+"] ")
+        rollstr = "".join(myargs)
+        
+        theroll = d20.roll(rollstr)
+        embedVar = discord.Embed(title=mychar.name +" rolls!", description=f"<@{ctx.author.id}>", color=0x00ff00)
         embedVar.set_thumbnail(url=mychar.picture)
-        theroll = d20.roll(args[1])
         embedVar.add_field(name="", value=theroll, inline=False)
-        if mychar.hp-theroll.total<=0:
-            embedVar.add_field(name="You are at 0 HP!", value="", inline=False)
-            await datab.updatechar(ctx.author.id,["hp", "0"])
-        else:
-            embedVar.add_field(name="Current HP", value=str(mychar.hp-theroll.total)+"/"+str(mychar.hpmax), inline=False)
-            await datab.updatechar(ctx.author.id,["hp", "-"+str(int(theroll.total))])
+        
+        if "str" in rollstr or "dex" in rollstr or"con" in rollstr or"int" in rollstr or"wis" in rollstr or"cha" in rollstr:
+            if int(theroll.total)<= 6:
+                embedVar.add_field(name="Result", value="Oh no. At least you got an XP.", inline=False)
+                await datab.updatechar(ctx.author.id,["xp", "+1"])
+            elif int(theroll.total) in [7,8,9]:
+                embedVar.add_field(name="Result", value="Mixed Success.", inline=False)
+            elif int(theroll.total)>9:
+                embedVar.add_field(name="Result", value="Full Success!", inline=False)
+            else:
+                embedVar.add_field(name="Result", value="Something broke", inline=False)
+        
         await ctx.channel.send(embed=embedVar)
-        return
-    if args[0][:3].lower() in ["str","dex","con","wis","int","cha"]:
-        stat = args[0][:3].lower()
-        args = args[1:]
-        if stat == "hel":
-            await ctx.send("Use `!roll` to roll dice! The standard format should look something like `!roll dex +1 \"Discern Realities\" adv`.\nIf you're rolling damage, use `!roll damage`")
-            return
-        elif stat == "str":
-            rollstr = rollstr + "+"+ str(mychar.mod[0]) + " [str] "
-        elif stat == "dex":
-            rollstr = rollstr + "+"+ str(mychar.mod[1]) + " [dex] "
-        elif stat == "con":
-            rollstr = rollstr + "+"+ str(mychar.mod[2]) + " [con] "
-        elif stat == "int":
-            rollstr = rollstr + "+"+ str(mychar.mod[3]) + " [int] "
-        elif stat == "wis":
-            rollstr = rollstr + "+"+ str(mychar.mod[4]) + " [wis] "
-        elif stat == "cha":
-            rollstr = rollstr + "+"+ str(mychar.mod[5]) + " [cha] "
-    for each in args:
-        myargs.append(each)
-    for arg in myargs:
-        if arg == "adv":
-            rollstr = "3d6kh2"
-            myargs.pop(i)
-        elif arg == "dis":
-            rollstr = "3d6kl2"
-            myargs.pop(i)
-        i=i+1
-    for arg in myargs:
-        if arg[:1]=="+" or arg[:1]=="-":
-            rollstr=rollstr+str(arg)
-        else:
-            rollstr = rollstr + " ["+arg+"] "
-    
-    theroll = d20.roll(rollstr)
-    embedVar.add_field(name="", value=theroll, inline=False)
-    
-    
-    
-    if "damage" not in rollstr:
-        if int(theroll.total)<= 6:
-            embedVar.add_field(name="Result", value="Oh no. At least you got an XP.", inline=False)
-            await datab.updatechar(ctx.author.id,["xp", "+1"])
-        elif int(theroll.total) in [7,8,9]:
-            embedVar.add_field(name="Result", value="Mixed Success.", inline=False)
-        elif int(theroll.total)>9:
-            embedVar.add_field(name="Result", value="Full Success!", inline=False)
-        else:
-            embedVar.add_field(name="Result", value="Something broke", inline=False)
-    
-    await ctx.channel.send(embed=embedVar)
+    except Exception as e:
+        await ctx.send(e)
+
 
 @bot.command()
 async def camp(ctx):
@@ -137,7 +133,7 @@ async def camp(ctx):
 async def xp(ctx, amt="0"):
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
-    embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
+    embedVar = discord.Embed(title=mychar.name, description=f"<@{ctx.author.id}>", color=0x00ff00)
     embedVar.set_thumbnail(url=mychar.picture)
     oldxp = mychar.xp
     if amt == "0":
@@ -145,14 +141,14 @@ async def xp(ctx, amt="0"):
     else:
         newxp = await datab.updatechar(ctx.author.id,["xp", amt])
         embedVar.add_field(name="XP", value="Your XP went from "+str(oldxp)+" to "+str(newxp)+"!", inline=False)
-        await ctx.channel.send(embed=embedVar)
+    await ctx.channel.send(embed=embedVar)
 
 @bot.command()
 async def coin(ctx, amt="0"):
     await ctx.message.delete()
     datab = database.DBManager
     mychar = await database.get_char_data(ctx.author.id)
-    embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
+    embedVar = discord.Embed(title=mychar.name, description=f"<@{ctx.author.id}>", color=0x00ff00)
     embedVar.set_thumbnail(url=mychar.picture)
     oldcoin = mychar.coin
     if amt == "0":
@@ -210,6 +206,6 @@ async def on_ready():
     except Exception as e:
         print(f"Error syncing commands: {e}")
 
-bot.run(TOKEN)
+bot.run(TOKEN, log_handler=handler)
 
 # https://discord.com/oauth2/authorize?client_id=1517333546153541662&permissions=8&integration_type=0&scope=bot

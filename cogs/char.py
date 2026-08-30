@@ -12,7 +12,13 @@ class Char(commands.Cog):
 
     @commands.group(invoke_without_command = True, aliases = ("c",))
     async def char(self, ctx):
-        await ctx.send("Use `!char new [name]` to make a new character, `!char list` to see all your characters, and `char view` to see your current character.")
+        try:
+            mychar = await database.get_char_data(ctx.author.id)
+            embedVar = discord.Embed(title=f"Active Character: {mychar.name}!", description=f"<@{ctx.author.id}>", color=0x00ff00)
+            embedVar.set_thumbnail(url=mychar.picture)
+            await ctx.channel.send(embed=embedVar)
+        except:
+            await ctx.send("Use `!char new [name]` to make a new character, `!char list` to see all your characters, and `char view` to see your current character.")
         
     @char.command()
     async def new(self, ctx, *args):
@@ -51,11 +57,11 @@ class Char(commands.Cog):
             await datab.updatechar(ctx.author.id, ["load", str(mychar.mod[0] + int(plbkobj.load))])
             await datab.updatechar(ctx.author.id, ["dmgdie", "1"+plbkobj.damage])
             starting_moves = plbkobj.starting_moves.replace("\'","\"")
-            starting_moves = json.loads(starting_moves)
+            starting_moves = json.loads(starting_moves, strict=False)
             for each in starting_moves:
                 await datab.updatechar(ctx.author.id, ["move","add", each["name"]])
             embedVar = discord.Embed(title=f"{mychar.name} is now a {plbkobj.name}! Next Steps", description="Your playbook, hp, load, Damage die, and starting moves have been imported.\nCheck the playbook itself if there's a move you should *not* have, since some have you make a choice between two.\n\nThe rest of this stuff goes in your notes, which you can update with `!update note add [info]`", color=0x00ff00)
-            looksdmp = json.loads(plbkobj.looks.replace("'", "\""))
+            looksdmp = json.loads(plbkobj.looks.replace("'", "\""), strict=False)
             try:
                 looksstr = ""
                 for each in looksdmp:
@@ -64,7 +70,7 @@ class Char(commands.Cog):
             except:
                 embedVar.add_field(name="Look",value=plbkobj.looks, inline=False)
             try:
-                racedmp = json.loads(str(plbkobj.race_moves).replace("'", "\""))
+                racedmp = json.loads(str(plbkobj.race_moves).replace("'", "\""), strict=False)
                 racestr = ""
                 for each in racedmp:
                     racestr = racestr + each['name']+": "+each['description'] + "\n"
@@ -72,7 +78,7 @@ class Char(commands.Cog):
             except:
                 embedVar.add_field(name="Race",value=plbkobj.race_moves, inline=False)
             try:
-                alignmentdmp = json.loads(str(plbkobj.alignments_list).replace("'", "\""))
+                alignmentdmp = json.loads(str(plbkobj.alignments_list).replace("'", "\""), strict=False)
                 alignmentstr = ""
                 for each in alignmentdmp:
                     alignmentstr = alignmentstr + each['name']+": "+each['description']+ "\n"
@@ -80,7 +86,7 @@ class Char(commands.Cog):
             except:
                 embedVar.add_field(name="Alignments",value=plbkobj.alignments_list, inline=False)
             try:
-                bonddmp = json.loads(str(plbkobj.bonds).replace("'", "\""))
+                bonddmp = json.loads(str(plbkobj.bonds).replace("'", "\""), strict=False)
                 bondstr = ""
                 for each in bonddmp:
                     bondstr = bondstr + each+"\n"
@@ -124,9 +130,9 @@ class Char(commands.Cog):
         charlist = await datab.charlist(ctx.author.id)
         for guy in charlist:
             if re.search(charname,guy[1]) is not None:
-                newcharname = guy[1]
+                charname = guy[1]
                 await datab.set(ctx.author.id, guy[0])
-        await ctx.send(f"Switched from {oldcharname} to {newcharname}")
+        await ctx.send(f"Switched from {oldcharname} to {charname}")
         
     @char.command()
     async def list(self, ctx):
@@ -155,8 +161,8 @@ class Char(commands.Cog):
             mychar = await database.get_char_data(ctx.author.id)
             embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
             embedVar.set_thumbnail(url=mychar.picture)
-        except:
-            await ctx.send("You don't have an active character to view.")
+        except Exception as e:
+            await ctx.send("You don't have an active character to view or this:\n"+str(e))
             return
         if "basic" in args:
             playbookstr = str(mychar.playbook)[2:len(mychar.playbook)-2]

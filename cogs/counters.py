@@ -20,7 +20,7 @@ class CounterCMDs(commands.Cog):
         mychar = await database.get_char_data(ctx.author.id)
         if len(args)<1: # list all CCs
             try:
-                embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=f"<@{ctx.author}>", color=0x00ff00)
+                embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=f"<@{ctx.author.id}>", color=0x00ff00)
                 embedVar.set_thumbnail(url=mychar.picture)
                 for each in mychar.cc:
                     embedVar.add_field(name=each.name, value=f"Min: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
@@ -31,7 +31,7 @@ class CounterCMDs(commands.Cog):
             try:
                 for each in mychar.cc:
                     if re.search(args[0], each.name, re.I) is not None:
-                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=f"<@{ctx.author}>", color=0x00ff00)
+                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=f"<@{ctx.author.id}>", color=0x00ff00)
                         embedVar.set_thumbnail(url=mychar.picture)
                         embedVar.add_field(name=each.name, value=f"Description: {each.desc}\nMin: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
                         await ctx.channel.send(embed=embedVar)
@@ -58,9 +58,9 @@ class CounterCMDs(commands.Cog):
                                 each.value = each.maximum
                             elif each.value < each.minimum:
                                 each.value = each.minimum
-                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description="", color=0x00ff00)
+                        embedVar = discord.Embed(title=f"{mychar.name}'s Counters", description=f"<@{ctx.author.id}>", color=0x00ff00)
                         embedVar.set_thumbnail(url=mychar.picture)
-                        embedVar.add_field(name=each.name, value=f"Min: {each.minimum}, Max: {each.maximum}, Value: {each.value}", inline=False)
+                        embedVar.add_field(name=each.name, value=f"{each.value}/{each.maximum}", inline=False)
                         await ctx.channel.send(embed=embedVar)
                 #make string and push to db
                 ccarray = []
@@ -84,14 +84,14 @@ class CounterCMDs(commands.Cog):
         datab = database.DBManager
         # !cc create [Name] [min] [max] [value]
         # if a name matches then overwrite
-        # !cc -name Name -min 0 -max -5 -value 5 (technically in any order or omit)
+        # !cc -name Name -min 0 -max -5 -value 5 -desc "text" (technically in any order or omit)
         arglist = []
         for each in args:
             arglist.append(each) # make something mutable
         ccname = "Counter"
         ccmin = 0
         ccmax = 1
-        ccval = ccmax
+        ccval = 0
         ccdesc = f"Counter for {ccname}"
         try:
             while len(arglist) >= 1:
@@ -108,15 +108,18 @@ class CounterCMDs(commands.Cog):
                     ccval = int(arglist[1])
                     arglist = arglist[2:]
                 if arglist[0] == "-desc":
-                    ccdesc = int(arglist[1])
+                    ccdesc = arglist[1]
                     arglist = arglist[2:]
-        except:
-            pass
+        except Exception as e:
+            print("nice: ", e)
         mycounter={}
         mycounter["name"] = ccname
         mycounter["min"] = ccmin
         mycounter["max"] = ccmax
-        mycounter["value"] = ccval        
+        if ccval == 0:
+            mycounter["value"] = ccmax
+        else:
+            mycounter["value"] = ccval
         mycounter["desc"] = ccdesc
         result = await datab.updatechar(ctx.author.id, ["counter", "+", mycounter])
         await ctx.send(result)

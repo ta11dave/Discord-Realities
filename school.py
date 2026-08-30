@@ -62,7 +62,7 @@ class Moves:
         self.key = key
 
 class Counter:
-    def __init__(self, name, minimum, maximum, value):
+    def __init__(self, name, minimum, maximum, value, desc):
         self.name = name
         self.minimum = minimum
         self.maximum = maximum

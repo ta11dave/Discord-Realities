@@ -489,7 +489,7 @@ class DBManager:
                 mynote = str(mynotes[0])
                 if mynote == "None":
                     mynote = ""
-                if args[0] == "+" or args[0] == "add":
+                if args[0] in ["+","add"]:
                     for each in args[1:]:
                         if len(mynote)<1:
                             mynote = str(each)
@@ -498,7 +498,7 @@ class DBManager:
                     await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Added the following note: {args[1:]}"
-                elif args[0] == "-" or args[0] == "remove":
+                elif args[0] in ["-","remove"]:
                     notearray = mynote.split("%%")
                     removednote = ""
                     for each in args[1:]:
@@ -513,6 +513,20 @@ class DBManager:
                     await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
                     return f"Removed note: {removednote}"
+                elif args[0] == "edit":
+                    notearray = mynote.split("%%")
+                    i=0
+                    for each in notearray:
+                        if re.search(args[1], each, re.I) is not None:
+                            savei = i
+                        else:
+                            i=i+1
+                    oldnote = notearray[savei]
+                    notearray[savei] = " ".join(args[2:])
+                    mynote = "%%".join(notearray)
+                    await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
+                    await db.commit()
+                    return f"Edited note \"{oldnote}\" to be \"{notearray[savei]}\""
             if myargs == "moves" or myargs == "move": #TEXT
                 async with db.execute("SELECT moves FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     mymoves = await cursor.fetchone()

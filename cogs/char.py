@@ -180,7 +180,7 @@ class Char(commands.Cog):
             mymoves="* " + mychar.moves.replace("%%","\n* ")
             embedVar.add_field(name="Moves", value=mymoves, inline=False)
         if "note" in args or "notes" in args:
-            mynotes=mychar.notes.replace("%%","\n* ")
+            mynotes="* "+mychar.notes.replace("%%","\n* ")
             embedVar.add_field(name="Notes", value=mynotes, inline=False)
         if "help" in args:
             ctx.send("Use `!char view` to see your sheet.\n\nYou can also be more specific with: \n`!char view basic`\n`!char view stats`\n`!char view hp`\n`!char view gear`\n`!char view move`\n`!char view notes`")

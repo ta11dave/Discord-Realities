@@ -12,7 +12,7 @@ import json
 import cogs.char
 import logging
 
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+# handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
 #secure token stuff
 load_dotenv()
@@ -53,14 +53,21 @@ async def roll(ctx, *args):
             if args[0].lower() == "ouch":
                 embedVar = discord.Embed(title=mychar.name +" takes damage!", description=f"<@{ctx.author.id}>", color=0x00ff00)
                 embedVar.set_thumbnail(url=mychar.picture)
+                #if armor isn't there or is 0
                 theroll = d20.roll(args[1])
                 embedVar.add_field(name="", value=theroll, inline=False)
-                if mychar.hp-theroll.total<=0:
+                damagedone = theroll.total
+                if len(args)>2:
+                    damagedone = theroll.total - int(args[2])
+                    if damagedone < 0:
+                        damagedone = 0
+                    embedVar.add_field(name="But you have armor!", value=f"{args[2]} armor!\nYou take {damagedone} damage.", inline=False)
+                if mychar.hp-damagedone<=0:
                     embedVar.add_field(name="You are at 0 HP!", value="", inline=False)
                     await datab.updatechar(ctx.author.id,["hp", "0"])
                 else:
-                    embedVar.add_field(name="Current HP", value=str(mychar.hp-theroll.total)+"/"+str(mychar.hpmax), inline=False)
-                    await datab.updatechar(ctx.author.id,["hp", "-"+str(int(theroll.total))])
+                    embedVar.add_field(name="Current HP", value=str(mychar.hp-damagedone)+"/"+str(mychar.hpmax), inline=False)
+                    await datab.updatechar(ctx.author.id,["hp", "-"+str(int(damagedone))])
                 await ctx.channel.send(embed=embedVar)
                 return
             
@@ -206,6 +213,6 @@ async def on_ready():
     except Exception as e:
         print(f"Error syncing commands: {e}")
 
-bot.run(TOKEN, log_handler=handler)
-
+# bot.run(TOKEN, log_handler=handler)
+bot.run(TOKEN)
 # https://discord.com/oauth2/authorize?client_id=1517333546153541662&permissions=8&integration_type=0&scope=bot

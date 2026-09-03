@@ -44,19 +44,18 @@ shows a list of all the basic/special moves and your active character's moves
 
 ### !update \[component] (command) \[value] or !up \[component] (command) \[value]
 
-Can be used to update anything on your character sheet. This command has a lot going on.
-To use this function, you need to have made a character first. Format should look like:
-!update playbook Paladin
-!update name John Smith
-!update stats 12 10 14 16 13 8
-!update hp +3 or !update hp 12
-!update load +1 or !update load 8
-!update dmgdie "1d8+1d4"
-!update gear add "stuff"
-!update notes add "notes"
-!update move add "Arcane Art"
-!update xp +1 or !char update xp 7
-!update picture www.pictureurl.com
+* Can be used to update anything on your character sheet. This command has a lot going on. To use this function, you need to have made a character first. Format should look like:
+* !update playbook Paladin
+* !update name John Smith
+* !update stats 12 10 14 16 13 8
+* !update hp +3 or !update hp 12
+* !update load +1 or !update load 8
+* !update dmgdie "1d8+1d4"
+* !update gear add "stuff"
+* !update notes add "notes" "other notes"
+* !update move add "Arcane Art"
+* !update xp +1 or !char update xp 7
+* !update picture www.pictureurl.com
 
 ## Character Commands
 

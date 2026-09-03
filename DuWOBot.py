@@ -12,7 +12,7 @@ import json
 import cogs.char
 import logging
 
-# handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 
 #secure token stuff
 load_dotenv()
@@ -213,6 +213,6 @@ async def on_ready():
     except Exception as e:
         print(f"Error syncing commands: {e}")
 
-# bot.run(TOKEN, log_handler=handler)
-bot.run(TOKEN)
+bot.run(TOKEN, log_handler=handler)
+
 # https://discord.com/oauth2/authorize?client_id=1517333546153541662&permissions=8&integration_type=0&scope=bot

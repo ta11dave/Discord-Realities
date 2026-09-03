@@ -7,3 +7,4 @@ __pycache__/database.cpython-313.pyc
 *.pyc
 /Game data not used
 *.log
+*.log

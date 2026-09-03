@@ -129,6 +129,7 @@ class Char(commands.Cog):
             oldcharname = "Deleted character"
         charlist = await datab.charlist(ctx.author.id)
         for guy in charlist:
+            print(guy)
             if re.search(charname,guy[1]) is not None:
                 charname = guy[1]
                 await datab.set(ctx.author.id, guy[0])

@@ -103,7 +103,8 @@ class Character:
         self.coin = coin
         self.cc = []
         counterarray = json.loads(counters.replace("'", "\""))
-        for each in counterarray:
-            self.cc.append(Counter(each['name'], each['min'], each['max'], each['value'], each['desc']))
+        if len(counterarray)>0:
+            for each in counterarray:
+                self.cc.append(Counter(each['name'], each['min'], each['max'], each['value'], each['desc']))
       
 

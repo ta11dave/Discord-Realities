@@ -158,13 +158,13 @@ class Char(commands.Cog):
             for each in args:
                 newargs.append(str(each).lower())
             args = newargs
-        try:
-            mychar = await database.get_char_data(ctx.author.id)
-            embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
-            embedVar.set_thumbnail(url=mychar.picture)
-        except Exception as e:
-            await ctx.send("You don't have an active character to view or this:\n"+str(e))
-            return
+       # try:
+        mychar = await database.get_char_data(ctx.author.id)
+        embedVar = discord.Embed(title=mychar.name, description="", color=0x00ff00)
+        embedVar.set_thumbnail(url=mychar.picture)
+        # except Exception as e:
+            # await ctx.send("You don't have an active character to view or this:\n"+str(e))
+            # return
         if "basic" in args:
             playbookstr = str(mychar.playbook)[2:len(mychar.playbook)-2]
             datastr = f"Playbook: {playbookstr}\nName: {mychar.name}\nLevel: {mychar.level}\nXP: {mychar.xp}\nDamage Die: {mychar.dmgdie}\nCoin: {mychar.coin}"

@@ -110,7 +110,7 @@ class Scene(commands.Cog):
         await UpdatePin(ctx)
         await ctx.send(f"{mychar.name} has left the scene")
     
-    @scene.command(invoke_without_command = True, aliases = ("n",))
+    @commands.command(invoke_without_command = True, aliases = ("n",))
     async def next(self, ctx):
         # marks your turn as taken on the 
         await ctx.message.delete()
@@ -151,28 +151,25 @@ class Scene(commands.Cog):
             await ctx.send(e)
             
         
-    @scene.command()
+    @scene.command(aliases = ("nadd",))
     async def addnpc(self, ctx, *, npc_name = "NPC"):
         await ctx.message.delete()
         try:
             async with aiosqlite.connect(scenedb) as db:
                 async with db.execute(f"SELECT * FROM scene_{str(ctx.channel.id)} WHERE id = 1") as cursor:
                     DMrow = await cursor.fetchone()
-                if DMrow[1] != ctx.author.id:
-                    raise 1
+                if int(DMrow[1]) != int(ctx.author.id):
+                    raise Exception(f"Hey hey Buddy, you're not the DM. That would be <@{int(DMrow[1])}> because they started the scene.")
         except Exception as e:
-            if e==1:
-                await ctx.send(f"Hey hey Buddy, you're not the DM. That would be <@{int(DMrow[1])}> because they started the scene.")
-                return
-            else:
-                await ctx.send("No scene to join!")
+            await ctx.send(e)
+            return
         async with aiosqlite.connect(scenedb) as db:
-            await db.execute(f"INSERT INTO scene_{str(ctx.channel.id)} (userid, actors, turn, notes, pin_ID, chartype) VALUES (?, ?, ?, ?, ?, ?)", ("", npc_name, 0, "", "", "NPC"))
+            await db.execute(f"INSERT INTO scene_{str(ctx.channel.id)} (userid, actors, turn, notes, pin_ID, chartype) VALUES (?, ?, ?, ?, ?, ?)", ("", crypt(npc_name), 0, "", "", "NPC"))
             await db.commit()
             await UpdatePin(ctx)
         await ctx.send(f"`{npc_name} has joined the scene!`")
         
-        
+         
     @scene.command()
     async def npcleave(self, ctx, *, npc_name):
         await ctx.message.delete()
@@ -199,7 +196,7 @@ class Scene(commands.Cog):
             await db.execute(f"DELETE FROM scene_{str(ctx.channel.id)} WHERE actors = \"{my_npc}\"")
             await db.commit()
         await UpdatePin(ctx)
-        await ctx.send(f"{npc_name} has left the scene")
+        await ctx.send(f"{decrypt(my_npc)} has left the scene")
 
     @scene.command()
     async def info(self, ctx):
@@ -224,16 +221,16 @@ class Scene(commands.Cog):
                 else:
                     mynote = str(mynotes[0])
         if cmd in ["+","add"]:
-            for note in notes:
-                if len(mynote)<1:
-                    mynote = str(note)
-                else:
-                    mynote = mynote+"%%"+str(note)
-                async with aiosqlite.connect(scenedb) as db:
-                    await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{mynote}\" WHERE userid = {ctx.author.id};")
-                    await db.commit()
-                await UpdatePin(ctx)
-                await ctx.send(f"Added the following note: {note}")
+            if len(mynote)<1:
+                mynote = str(notes[0])
+            else:
+                note = " ".join(notes)
+                mynote = mynote+"%%"+str(note)
+            async with aiosqlite.connect(scenedb) as db:
+                await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{crypt(mynote)}\" WHERE userid = {ctx.author.id};")
+                await db.commit()
+            await UpdatePin(ctx)
+            await ctx.send(f"Added the following note: {decrypt(note)}")
         elif cmd in ["-","remove"]:
             for note in notes:
                 notearray = mynote.split("%%")
@@ -241,7 +238,7 @@ class Scene(commands.Cog):
                 i=0
                 for each in notearray:
                     if re.search(note, each, re.I) is not None:
-                        removednote = note
+                        removednote = each
                         notearray.pop(i)
                     else:
                         i=i+1
@@ -250,7 +247,7 @@ class Scene(commands.Cog):
                     await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{mynote}\" WHERE userid = {ctx.author.id};")
                     await db.commit()
                 await UpdatePin(ctx)
-                await ctx.send(f"Removed note: {removednote}")
+                await ctx.send(f"Removed note: {decrypt(removednote)}")
         elif cmd == "edit":
             notearray = mynote.split("%%")
             i=0
@@ -265,7 +262,7 @@ class Scene(commands.Cog):
             notearray[savei] = newnote
             mynote = "%%".join(notearray)
             async with aiosqlite.connect(scenedb) as db:
-                await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{mynote}\" WHERE userid = {ctx.author.id};")
+                await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{crypt(mynote)}\" WHERE userid = {ctx.author.id};")
                 await db.commit()
             await UpdatePin(ctx)
             await ctx.send("Edited note!")
@@ -287,46 +284,46 @@ class Scene(commands.Cog):
                 async with db.execute(f"SELECT actors FROM scene_{str(ctx.channel.id)}") as cursor:
                     actorlist = await cursor.fetchall()
             for each in actorlist:
-                if re.search(npc, each[0], re.I) is not None:
+                if re.search(npc, decrypt(each[0]), re.I) is not None:
                     my_npc = each[0]
         except Exception as e:
             await ctx.send("No NPC by that name in this scene! or "+str(e))
             return
         async with aiosqlite.connect(scenedb) as db:
-            async with db.execute(f"SELECT notes FROM scene_{str(ctx.channel.id)} WHERE actors = ?", (my_npc,)) as cursor:
+            async with db.execute(f"SELECT notes FROM scene_{str(ctx.channel.id)} WHERE actors = ?", (crypt(my_npc),)) as cursor:
                 mynotes = await cursor.fetchone()
                 if mynotes in [None, "None"]:
                     mynote = ""
                 else:
                     mynote = str(mynotes[0])
         if cmd in ["+","add"]:
-            for note in notes:
-                if len(mynote)<1:
-                    mynote = str(note)
-                else:
-                    mynote = mynote+"%%"+str(note)
-                async with aiosqlite.connect(scenedb) as db:
-                    await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{mynote}\" WHERE actors = \"{my_npc}\";")
-                    await db.commit()
-                await UpdatePin(ctx)
-                await ctx.send(f"Added the following note: {note}")
+            note = " ".join(notes)
+            if len(mynote)<1:
+                mynote = str(note)
+            else:
+                mynote = mynote+"%%"+str(note)
+            async with aiosqlite.connect(scenedb) as db:
+                await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{crypt(mynote)}\" WHERE actors = \"{crypt(my_npc)}\";")
+                await db.commit()
+            await UpdatePin(ctx)
+            await ctx.send(f"Added the following note: {decrypt(note)}")
         elif cmd in ["-","remove"]:
-            for note in notes:
-                notearray = mynote.split("%%")
-                removednote = ""
-                i=0
-                for each in notearray:
-                    if re.search(note, each, re.I) is not None:
-                        removednote = note
-                        notearray.pop(i)
-                    else:
-                        i=i+1
-                mynote = "%%".join(notearray)
-                async with aiosqlite.connect(scenedb) as db:
-                    await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{mynote}\" WHERE actors = \"{my_npc}\";")
-                    await db.commit()
-                await UpdatePin(ctx)
-                await ctx.send(f"Removed note: {removednote}")
+            note = " ".join(notes)
+            notearray = mynote.split("%%")
+            removednote = ""
+            i=0
+            for each in notearray:
+                if re.search(note, each, re.I) is not None:
+                    removednote = each
+                    notearray.pop(i)
+                else:
+                    i=i+1
+            mynote = "%%".join(notearray)
+            async with aiosqlite.connect(scenedb) as db:
+                await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{crypt(mynote)}\" WHERE actors = \"{crypt(my_npc)}\";")
+                await db.commit()
+            await UpdatePin(ctx)
+            await ctx.send(f"Removed note: {decrypt(removednote)}")
         elif cmd == "edit":
             notearray = mynote.split("%%")
             i=0
@@ -341,7 +338,7 @@ class Scene(commands.Cog):
             notearray[savei] = newnote
             mynote = "%%".join(notearray)
             async with aiosqlite.connect(scenedb) as db:
-                await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{mynote}\" WHERE actors = \"{my_npc}\";")
+                await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{crypt(mynote)}\" WHERE actors = \"{crypt(my_npc)}\";")
                 await db.commit()
             await UpdatePin(ctx)
             await ctx.send("Edited note!")
@@ -369,12 +366,12 @@ async def UpdatePin(ctx):
             PCturnreset = PCturnreset + 1
         else:
             pass
-        actorline = actorline + each[0] + ": "
+        actorline = actorline + decrypt(each[0]) + ": "
         for every in notes:
             if every == notes[0]:
-                actorline = actorline+every
+                actorline = actorline+decrypt(every)
             else:
-                actorline = actorline+", "+every
+                actorline = actorline+", "+decrypt(every)
         actorline = actorline + "\n"
         newpin = newpin + actorline
     if PCturnreset == 0:
@@ -389,6 +386,15 @@ async def UpdatePin(ctx):
     message = await ctx.fetch_message(messageid)
     await message.edit(content="```\n"+newpin+"\n```")
 
+def crypt(string):
+    string = string.replace("\"", "DBQUOTE")
+    string = string.replace("'", "SQUOTE") 
+    return string
+
+def decrypt(string):
+    string = string.replace("DBQUOTE", "\"")
+    string = string.replace("SQUOTE", "'")
+    return string
 
 async def setup(bot):
     await bot.add_cog(Scene(bot))

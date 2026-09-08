@@ -37,9 +37,10 @@ class Look(commands.Cog):
             await ctx.send("Use `!lookup monster [monster]` to have a monster statblock sent in a private message.\nUse `!lookup item [item]`, Use `!lookup move [move]`, and Use `!lookup playbook [playbook]` to look up stuff on the playbook\nYou can also use `!monster [monster]`, `!playbook [playbook]`, `!item [item]`, and `!move [move]` if that's easier for ya. \nI guess the lookup command is depreciated but idk")
 
     @commands.command(aliases=("mon",))
-    async def monster(self, ctx, searchterm = "None"):
+    async def monster(self, ctx, *searchterm):
+        searchterm = " ".join(searchterm)
         datab = database.DBManager
-        if searchterm == "None":
+        if len(searchterm) == 0:
             namestr = ""
             listonames = await datab.pull_names(ctx,"monsters")
             for each in listonames:
@@ -91,9 +92,10 @@ class Look(commands.Cog):
             pass
 
     @commands.command(aliases=("gear",))
-    async def item(self, ctx, searchterm = "None"):
+    async def item(self, ctx, *searchterm):
+        searchterm = " ".join(searchterm)
         datab = database.DBManager
-        if searchterm == "None":
+        if len(searchterm) == 0:
             namestr = ""
             listonames = await datab.pull_names(ctx,"eqmt")
             for each in listonames:
@@ -122,9 +124,10 @@ class Look(commands.Cog):
             pass
         
     @commands.command(aliases = ("pb",))
-    async def playbook(self, ctx, searchterm = "None"):
+    async def playbook(self, ctx, *searchterm):
+        searchterm = " ".join(searchterm)
         datab = database.DBManager
-        if searchterm == "None":
+        if len(searchterm) == 0:
             namestr = ""
             listonames = await datab.pull_names(ctx,"playbooks")
             for each in listonames:
@@ -151,9 +154,10 @@ class Look(commands.Cog):
         await ctx.channel.send("Sent you a DM! (Wouldn't want to clog up chat...)")
 
     @commands.command()
-    async def move(self, ctx, searchterm = "None"):
+    async def move(self, ctx, *searchterm):
+        searchterm = " ".join(searchterm)
         datab = database.DBManager
-        if searchterm == "None":
+        if len(searchterm) == 0:
             namestr = ""
             listonames = await datab.pull_names(ctx,"moves")
             for each in listonames:

@@ -8,3 +8,4 @@ __pycache__/database.cpython-313.pyc
 /Game data not used
 *.log
 *.log
+*.lnk

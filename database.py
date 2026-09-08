@@ -45,7 +45,7 @@ class DBManager:
             await db.execute("CREATE TABLE IF NOT EXISTS char_data (id INTEGER PRIMARY KEY, playbook TEXT, name TEXT, level INTEGER, str INTEGER, dex INTEGER, con INTEGER, int INTEGER, wis INTEGER, cha INTEGER, hp INTEGER, hpmod INTEGER, load INTEGER, dmgdie TEXT, gear TEXT, notes TEXT, moves TEXT, xp INTEGER, picture TEXT, coin INTEGER, counters TEXT)")
             await db.commit()
             # put in a blank character
-            await db.execute("INSERT INTO char_data (playbook, name, level, str, dex, con, int, wis, cha, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin, counters) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 1, 10, 10, 10, 10, 10, 10, 0, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg", 0, "{}"))
+            await db.execute("INSERT INTO char_data (playbook, name, level, str, dex, con, int, wis, cha, hp, hpmod, load, dmgdie, gear, notes, moves, xp, picture, coin, counters) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", ("playbook-blank", charname, 1, 10, 10, 10, 10, 10, 10, 0, 0, 0, "d1", "None", "None", "None", 0, "https://upload.wikimedia.org/wikipedia/commons/7/79/The_Knight%2C_from_The_Dance_of_Death_MET_DP-23045-001.jpg", 0, "[]"))
             await db.commit()
 
     async def XP_view(user_id):
@@ -640,6 +640,7 @@ class DBManager:
                 elif args[0] == "push":
                     try:
                         myccs = json.dumps(args[1]).replace("\"", "'")
+                        myccs = myccs[1:len(myccs)-1]
                         await db.execute(f"UPDATE char_data SET counters = \"{myccs}\" WHERE id = {mycharid};")
                         await db.commit()
                         return "Pushed"

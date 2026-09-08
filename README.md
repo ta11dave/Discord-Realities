@@ -2,9 +2,9 @@
 
 A discord bot that can be used to play Dungeon World. Includes a character builder, a character manager, and all the reference material. Huge shoutout to https://www.npmjs.com/package/dungeonworld-data for doing all the data entry for me.
 
-### Documentation (kinda)
+# Documentation (kinda)
 
-Anything in \[brackets] are required, and anything in (parenthesis) are optional
+Anything in [brackets] are required, and anything in (parenthesis) are optional
 
 ## General Commands
 
@@ -20,15 +20,11 @@ Can also do:
 
 This command will level you up if you have the XP and will heal you up to half your max HP.
 
-
-
 ### !xp (value)
 
 !xp will show how much xp you have.
 !xp (n) will set your xp to that number
 !xp (+n) will add that much xp, works with -n too
-
-
 
 ### !coin (value)
 
@@ -36,13 +32,11 @@ This command will level you up if you have the XP and will heal you up to half y
 !coin (n) will set your coin to that number
 !coin (+n) will add that much coin, works with -n too
 
-
-
 ### !movelist
 
 shows a list of all the basic/special moves and your active character's moves
 
-### !update \[component] (command) \[value] or !up \[component] (command) \[value]
+### !update [component] (command) [value] or !up [component] (command) [value]
 
 * Can be used to update anything on your character sheet. This command has a lot going on. To use this function, you need to have made a character first. Format should look like:
 * !update playbook Paladin

@@ -1,10 +1,16 @@
 # Discord-Realities
 
-A discord bot that can be used to play Dungeon World. Includes a character builder, a character manager, and all the reference material. Huge shoutout to https://www.npmjs.com/package/dungeonworld-data for doing all the data entry for me.
+A discord bot that can be used to play Dungeon World. Includes a character builder, a character manager, and all the reference material. Huge shoutout to https://www.npmjs.com/package/dungeonworld-data for doing most of the data entry for me.
+
+
+
+Have the bot join your server here: https://discord.com/oauth2/authorize?client\_id=1517333546153541662
+
+
 
 # Documentation (kinda)
 
-Anything in [brackets] are required, and anything in (parenthesis) are optional
+Anything in \[brackets] are required, and anything in (parenthesis) are optional
 
 ## General Commands
 
@@ -36,12 +42,14 @@ This command will level you up if you have the XP and will heal you up to half y
 
 shows a list of all the basic/special moves and your active character's moves
 
-### !update [component] (command) [value] or !up [component] (command) [value]
+### !update \[component] (command) \[value] or !up \[component] (command) \[value]
 
 * Can be used to update anything on your character sheet. This command has a lot going on. To use this function, you need to have made a character first. Format should look like:
 * !update playbook Paladin
 * !update name John Smith
 * !update stats 12 10 14 16 13 8
+
+  * Always in the order of: Strength, Dexterity, Constitution, Wisdom, Intelligence, Charisma. The modifiers are calculated automatically.
 * !update hp +3 or !update hp 12
 * !update load +1 or !update load 8
 * !update dmgdie "1d8+1d4"

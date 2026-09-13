@@ -151,6 +151,7 @@ async def roll(ctx, *args):
         else:
             embedVar.add_field(name="Result", value="Something broke", inline=False)
     
+    await ctx.message.delete()
     await ctx.channel.send(embed=embedVar)
 
 

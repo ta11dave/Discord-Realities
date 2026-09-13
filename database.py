@@ -362,6 +362,7 @@ class DBManager:
     
     async def updatechar(user_id, args):
         mycharid = await active_char_id(user_id)
+        mychar = await get_char_data(user_id)
         if str(args) == "help":
             return "To use this function, you need to have made a character first. Format should look like:`!update playbook Paladin` \n `!update name John Smith` \n `!update stats 12 10 14 16 13 8` \n `!update hp +3` or `!update hp 12` \n `!update load +1` or `!update load 8` \n `!update dmgdie \"1d8+1d4\"` \n `!update gear add \"stuff\"` \n `!update notes add \"notes\"` \n `!update move \"I don't know how to implement this\"` \n `!update xp +1` or `!char update xp 7` \n `!update picture www.pictureurl.com`"
         myargs = str(args[0])
@@ -371,19 +372,21 @@ class DBManager:
                 args = str(args)
                 await db.execute(f"UPDATE char_data SET playbook = \"{args}\" WHERE id = {mycharid};")
                 await db.commit()
-                return f"Playbook is now {args}"
+                return f"{mychar.name}'s playbook is now {args}"
             if myargs == "name": #TEXT
                 newname = ""
+                oldname = mychar.name
                 for each in args:
                     newname=newname+str(each)+" "
                 newname = str(newname[:len(newname)-1])
                 await db.execute(f"UPDATE char_data SET name = \"{newname}\" WHERE id = {mycharid};")
                 await db.commit()
-                return f"Name is now {newname}"
+                return f"Name was {oldname}, but is now \n# {newname}"
             if myargs == "level":
                 await db.execute(f"UPDATE char_data SET level = {args[0]} WHERE id = {mycharid};")
                 await db.commit()
             if myargs == "stats": #assumes 6 numbers will be coming next
+                oldstats = mychar.stats
                 if len(args) < 6:
                     return
                 else:
@@ -395,7 +398,7 @@ class DBManager:
                     await db.execute(f"UPDATE char_data SET int = \"{statargs[4]}\" WHERE id = {mycharid};")
                     await db.execute(f"UPDATE char_data SET cha = \"{statargs[5]}\" WHERE id = {mycharid};")
                     await db.commit()
-                return f"stats are now Strength: {statargs[0]}, Dexterity: {statargs[1]}, Constitution: {statargs[2]}, Intelligence: {statargs[3]}, Wisdom: {statargs[4]}, Charisma: {statargs[5]}"
+                return f"{mychar.name}'s stats are now Strength:{oldstats[0]} -> {statargs[0]}, Dexterity: {oldstats[1]} -> {statargs[1]}, Constitution: {oldstats[2]} -> {statargs[2]}, Intelligence: {oldstats[3]} -> {statargs[3]}, Wisdom: {oldstats[4]} -> {statargs[4]}, Charisma: {oldstats[5]} -> {statargs[5]}"
             if myargs == "hp": #INTEGER
                 async with db.execute("SELECT hp FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myhp = await cursor.fetchone()
@@ -413,7 +416,7 @@ class DBManager:
                     print("not sure what you're trying to increase your hp by...?")
                 await db.execute(f"UPDATE char_data SET hp = {myhp} WHERE id = {mycharid};")
                 await db.commit()
-                return f"HP is now {myhp}"
+                return f"{mychar.name}'s HP is now {myhp}"
             if myargs == "hpmod": #INTEGER - ONLY FROM PLAYBOOK
                 async with db.execute("SELECT hpmod FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myhpmod = await cursor.fetchone()
@@ -431,7 +434,7 @@ class DBManager:
                     print("not sure what you're trying to increase your hpmod by...?")
                 await db.execute(f"UPDATE char_data SET hpmod = {myhpmod} WHERE id = {mycharid};")
                 await db.commit()
-                return f"HPmod is now {myhpmod}"
+                return f"{mychar.name}'s HPmod is now {myhpmod}"
             if myargs == "load": #INTEGER
                 async with db.execute("SELECT load FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     myload = await cursor.fetchone()
@@ -445,11 +448,11 @@ class DBManager:
                     return "Something went wrong with updating Load"
                 await db.execute(f"UPDATE char_data SET load = {myload} WHERE id = {mycharid};")
                 await db.commit()
-                return f"load is now {myload}"
+                return f"{mychar.name}'s load is now {myload}"
             if myargs == "dmgdie": #TEXT
                 await db.execute(f"UPDATE char_data SET dmgdie = \"{args[0]}\" WHERE id = {mycharid};")
                 await db.commit()
-                return f"Damage Die is now: {args[0]}"
+                return f"{mychar.name}'s damage die is now: {args[0]}"
             if myargs == "gear": #TEXT
                 async with db.execute("SELECT gear FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     mygear = await cursor.fetchone()
@@ -465,7 +468,7 @@ class DBManager:
                             mygear = mygear+"%%"+str(each)
                     await db.execute(f"UPDATE char_data SET gear = \"{mygear}\" WHERE id = {mycharid};")
                     await db.commit()
-                    return f"Added the following gear: {args[1:]}"
+                    return f"Added the following gear to {mychar.name}: {args[1:]}"
                 elif args[0] == "-" or args[0] == "remove":
                     geararray = mygear.split("%%")
                     i = 0
@@ -481,7 +484,7 @@ class DBManager:
                     mygear = ",".join(geararray)
                     await db.execute(f"UPDATE char_data SET gear = \"{mygear}\" WHERE id = {mycharid};")
                     await db.commit()
-                    return f"Removed gear: {removedgear}"
+                    return f"Removed gear from {mychar.name}: {removedgear}"
             if myargs == "note" or myargs == "notes": #TEXT
                 async with db.execute("SELECT notes FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     mynotes = await cursor.fetchone()
@@ -497,7 +500,7 @@ class DBManager:
                             mynote = mynote+"%%"+str(each)
                     await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
-                    return f"Added the following note: {args[1:]}"
+                    return f"Added the following note to {mychar.name}: {args[1:]}"
                 elif args[0] in ["-","remove"]:
                     notearray = mynote.split("%%")
                     removednote = ""
@@ -512,7 +515,7 @@ class DBManager:
                     mynote = "%%".join(notearray)
                     await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
-                    return f"Removed note: {removednote}"
+                    return f"Removed note from {mychar.name}: {removednote}"
                 elif args[0] == "edit":
                     notearray = mynote.split("%%")
                     i=0
@@ -526,7 +529,7 @@ class DBManager:
                     mynote = "%%".join(notearray)
                     await db.execute(f"UPDATE char_data SET notes = \"{mynote}\" WHERE id = {mycharid};")
                     await db.commit()
-                    return f"Edited note \"{oldnote}\" to be \"{notearray[savei]}\""
+                    return f"Edited note for {mychar.name}: \"{oldnote}\" -> \"{notearray[savei]}\""
             if myargs == "moves" or myargs == "move": #TEXT
                 async with db.execute("SELECT moves FROM char_data WHERE id = ?", (mycharid,)) as cursor:
                     mymoves = await cursor.fetchone()

@@ -134,6 +134,7 @@ class Scene(commands.Cog):
                     results = await cursor.fetchall()
                     results.pop(0) # taking out the DM
                     found = False
+                    print(results)
                     for each in results:
                         if mychar.name == each[0]:
                             found = True
@@ -146,6 +147,7 @@ class Scene(commands.Cog):
             async with aiosqlite.connect(scenedb) as db:
                 await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET turn = 1 WHERE actors = \"{mychar.name}\";")
                 await db.commit()
+            await ctx.send(f"{mychar.name} has released the spotlight.")
             await UpdatePin(ctx)
         except Exception as e:
             await ctx.send(e)
@@ -213,6 +215,7 @@ class Scene(commands.Cog):
 
     @scene.command()
     async def note(self, ctx, cmd, *notes):
+        mychar = await database.get_char_data(ctx.author.id)
         async with aiosqlite.connect(scenedb) as db:
             async with db.execute(f"SELECT notes FROM scene_{str(ctx.channel.id)} WHERE userid = ?", (ctx.author.id,)) as cursor:
                 mynotes = await cursor.fetchone()
@@ -230,7 +233,7 @@ class Scene(commands.Cog):
                 await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{crypt(mynote)}\" WHERE userid = {ctx.author.id};")
                 await db.commit()
             await UpdatePin(ctx)
-            await ctx.send(f"Added the following note: {decrypt(note)}")
+            await ctx.send(f"Added the following note to {mychar.name}: {decrypt(note)}")
         elif cmd in ["-","remove"]:
             for note in notes:
                 notearray = mynote.split("%%")
@@ -247,7 +250,7 @@ class Scene(commands.Cog):
                     await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{mynote}\" WHERE userid = {ctx.author.id};")
                     await db.commit()
                 await UpdatePin(ctx)
-                await ctx.send(f"Removed note: {decrypt(removednote)}")
+                await ctx.send(f"Removed note from {mychar.name}: {decrypt(removednote)}")
         elif cmd == "edit":
             notearray = mynote.split("%%")
             i=0
@@ -256,6 +259,7 @@ class Scene(commands.Cog):
                     savei = i
                 else:
                     i=i+1
+            oldnote = notearray[savei]
             newnote = ""
             for each in notes[1:]:
                 newnote = newnote+" "+each
@@ -265,7 +269,7 @@ class Scene(commands.Cog):
                 await db.execute(f"UPDATE scene_{str(ctx.channel.id)} SET notes = \"{crypt(mynote)}\" WHERE userid = {ctx.author.id};")
                 await db.commit()
             await UpdatePin(ctx)
-            await ctx.send("Edited note!")
+            await ctx.send(f"Edited {mychar.name}'s note:\n{oldnote} -> {newnote}!")
 
     @scene.command()
     async def npcnote(self, ctx, npc, cmd, *notes):
